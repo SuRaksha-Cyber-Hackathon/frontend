@@ -1,0 +1,99 @@
+class KeyPressEvent {
+  final int? id;
+  final String keyCode;
+  final String keyLabel;
+  final String eventType; // 'individual' or 'digram'
+  final int durationMs;
+  final DateTime timestamp;
+  final String? digramKey1;
+  final String? digramKey2;
+  final String contextScreen;
+  final String? fieldName;
+
+  KeyPressEvent({
+    this.id,
+    required this.keyCode,
+    required this.keyLabel,
+    required this.eventType,
+    required this.durationMs,
+    required this.timestamp,
+    this.digramKey1,
+    this.digramKey2,
+    required this.contextScreen,
+    this.fieldName,
+  });
+
+  Map<String, dynamic> toMap() => {
+    'id': id,
+    'key_code': keyCode,
+    'key_label': keyLabel,
+    'event_type': eventType,
+    'duration_ms': durationMs,
+    'timestamp': timestamp.toIso8601String(),
+    'digram_key1': digramKey1,
+    'digram_key2': digramKey2,
+    'context_screen': contextScreen,
+    'field_name': fieldName,
+  };
+
+  static KeyPressEvent fromMap(Map<String, dynamic> m) => KeyPressEvent(
+    id: m['id'] as int?,
+    keyCode: m['key_code'] as String,
+    keyLabel: m['key_label'] as String,
+    eventType: m['event_type'] as String,
+    durationMs: m['duration_ms'] as int,
+    timestamp: DateTime.parse(m['timestamp'] as String),
+    digramKey1: m['digram_key1'] as String?,
+    digramKey2: m['digram_key2'] as String?,
+    contextScreen: m['context_screen'] as String,
+    fieldName: m['field_name'] as String?,
+  );
+}
+
+class SwipeEvent {
+  final int? id;
+  final double startX;
+  final double startY;
+  final double endX;
+  final double endY;
+  final double distance;
+  final int durationMs;
+  final DateTime timestamp;
+  final String contextScreen;
+
+  SwipeEvent({
+    this.id,
+    required this.startX,
+    required this.startY,
+    required this.endX,
+    required this.endY,
+    required this.distance,
+    required this.durationMs,
+    required this.timestamp,
+    required this.contextScreen,
+  });
+
+  Map<String, dynamic> toMap() => {
+    'id': id,
+    'start_x': startX,
+    'start_y': startY,
+    'end_x': endX,
+    'end_y': endY,
+    'distance': distance,
+    'duration_ms': durationMs,
+    'timestamp': timestamp.toIso8601String(),
+    'context_screen': contextScreen,
+  };
+
+  static SwipeEvent fromMap(Map<String, dynamic> m) => SwipeEvent(
+    id: m['id'] as int?,
+    startX: (m['start_x'] as num).toDouble(),
+    startY: (m['start_y'] as num).toDouble(),
+    endX: (m['end_x'] as num).toDouble(),
+    endY: (m['end_y'] as num).toDouble(),
+    distance: (m['distance'] as num).toDouble(),
+    durationMs: m['duration_ms'] as int,
+    timestamp: DateTime.parse(m['timestamp'] as String),
+    contextScreen: m['context_screen'] as String,
+  );
+}
