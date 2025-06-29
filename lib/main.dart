@@ -1,31 +1,27 @@
-// main.dart
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'login_screen.dart'; // Import the new login screen file
-import 'home_page.dart';    // Import the new home page file
+import 'package:get/get.dart';
+import 'login_screens/RegisterPage.dart';
 
-void main() {
+// Import your data‐sender service
+import 'helpers/data_sender.dart';
+
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Kick off the foreground data sender
+  // DataSenderService().startForegroundSending();
+
   runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  const MyApp({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Behavioral Auth Demo',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-        visualDensity: VisualDensity.adaptivePlatformDensity,
-        fontFamily: 'Inter', // Applying Inter font
-      ),
-      initialRoute: '/', // Set the initial route to the login screen
-      routes: {
-        '/': (context) => const LoginScreen(),
-        '/home': (context) => const HomePage(),
-      },
+    return const GetMaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: SignUpView(),
     );
   }
 }

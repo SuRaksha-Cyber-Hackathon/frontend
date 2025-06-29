@@ -97,3 +97,39 @@ class SwipeEvent {
     contextScreen: m['context_screen'] as String,
   );
 }
+
+class TapEvent {
+  final int? id;
+  final double x;
+  final double y;
+  final int durationMs;
+  final DateTime timestamp;
+  final String contextScreen;
+
+  TapEvent({
+    this.id,
+    required this.x,
+    required this.y,
+    required this.durationMs,
+    required this.timestamp,
+    required this.contextScreen,
+  });
+
+  Map<String, dynamic> toMap() => {
+    'id': id,
+    'x': x,
+    'y': y,
+    'duration_ms': durationMs,
+    'timestamp': timestamp.toIso8601String(),
+    'context_screen': contextScreen,
+  };
+
+  static TapEvent fromMap(Map<String, dynamic> m) => TapEvent(
+    id: m['id'] as int?,
+    x: (m['x'] as num).toDouble(),
+    y: (m['y'] as num).toDouble(),
+    durationMs: m['duration_ms'] as int,
+    timestamp: DateTime.parse(m['timestamp'] as String),
+    contextScreen: m['context_screen'] as String,
+  );
+}
