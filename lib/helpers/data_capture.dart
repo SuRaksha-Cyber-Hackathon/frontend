@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/models.dart';
@@ -81,10 +83,18 @@ class DataCapture {
   static Offset? _startPos;
   static DateTime? _startTime;
 
+  static Offset? _currentPos;
+
   /// Call on drag start.
   static void onSwipeStart(DragStartDetails details) {
     _startPos = details.globalPosition;
+    _currentPos = _startPos; // Set initial current pos
     _startTime = DateTime.now();
+  }
+
+  /// Call on drag update.
+  static void onSwipeUpdate(DragUpdateDetails details) {
+    _currentPos = details.globalPosition;
   }
 
   /// Call on drag end.
@@ -93,28 +103,45 @@ class DataCapture {
       String contextScreen,
       void Function(SwipeEvent) callback,
       ) {
-    if (_startPos == null || _startTime == null) return;
+    if (_startPos == null || _startTime == null || _currentPos == null) return;
+
     final endTime = DateTime.now();
-    final velocity = details.velocity.pixelsPerSecond;
-    final endPos = _startPos! + Offset(velocity.dx.sign * 50, velocity.dy.sign * 50);
-    final distance = (_startPos! - endPos).distance;
     final durationMs = endTime.difference(_startTime!).inMilliseconds;
+    final dx = _currentPos!.dx - _startPos!.dx;
+    final dy = _currentPos!.dy - _startPos!.dy;
+    final distance = sqrt(dx * dx + dy * dy);
+
+    String direction = 'none';
+    if (distance > 10) { // threshold to filter accidental small movements
+      final angle = (atan2(dy, dx) * 180 / pi) % 360;
+
+      if ((angle >= 315 || angle < 45)) direction = 'right';
+      else if (angle >= 45 && angle < 135) direction = 'down';
+      else if (angle >= 135 && angle < 225) direction = 'left';
+      else if (angle >= 225 && angle < 315) direction = 'up';
+    }
+
     final sw = SwipeEvent(
       startX: _startPos!.dx,
       startY: _startPos!.dy,
-      endX: endPos.dx,
-      endY: endPos.dy,
+      endX: _currentPos!.dx,
+      endY: _currentPos!.dy,
       distance: distance,
       durationMs: durationMs,
       timestamp: endTime,
       contextScreen: contextScreen,
+      direction: direction,
     );
+
     callback(sw);
     CaptureStore().addSwipe(sw);
     print('SwipeEvent captured: ${sw.toMap()}');
+
     _startPos = null;
     _startTime = null;
+    _currentPos = null;
   }
+
 
   // ---------- TAP ----------
   static Offset? _tapStart;

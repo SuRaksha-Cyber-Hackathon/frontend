@@ -2,6 +2,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../helpers/data_capture.dart';
+import '../helpers/data_store.dart';
+
 class PayBillsPage extends StatefulWidget {
   @override
   _PayBillsPageState createState() => _PayBillsPageState();
@@ -16,6 +19,7 @@ class _PayBillsPageState extends State<PayBillsPage> with TickerProviderStateMix
   bool _isProcessing = false;
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
+  final FocusNode _keyboardFocus = FocusNode();
 
   final Map<String, Map<String, dynamic>> _billTypes = {
     'Electricity': {'icon': Icons.electrical_services, 'color': Colors.amber, 'providers': ['MSEB', 'Tata Power', 'BEST']},
@@ -31,6 +35,8 @@ class _PayBillsPageState extends State<PayBillsPage> with TickerProviderStateMix
     _animationController = AnimationController(duration: Duration(milliseconds: 600), vsync: this);
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(_animationController);
     _animationController.forward();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) => _keyboardFocus.requestFocus());
   }
 
   @override
@@ -38,37 +44,53 @@ class _PayBillsPageState extends State<PayBillsPage> with TickerProviderStateMix
     _animationController.dispose();
     _billNumberController.dispose();
     _amountController.dispose();
+    _keyboardFocus.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.grey[50],
-      appBar: AppBar(
-        elevation: 0,
-        backgroundColor: Colors.green[700],
-        foregroundColor: Colors.white,
-        title: Text('Pay Bills', style: TextStyle(fontWeight: FontWeight.w600)),
-        centerTitle: true,
+    return RawKeyboardListener(
+      focusNode: _keyboardFocus,
+      onKey: (event) => DataCapture.handleKeyEvent(
+        event,
+        'pay_bills',
+            (kp) => CaptureStore().addKey(kp),
       ),
-      body: FadeTransition(
-        opacity: _fadeAnimation,
-        child: SingleChildScrollView(
-          padding: EdgeInsets.all(20),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildBillTypeSelector(),
-                SizedBox(height: 24),
-                _buildPayFromAccount(),
-                SizedBox(height: 24),
-                _buildBillDetailsForm(),
-                SizedBox(height: 32),
-                _buildPayButton(),
-              ],
+      child: GestureDetector(
+        onPanStart: (details) => DataCapture.onSwipeStart(details),
+        onPanUpdate: (details) => DataCapture.onSwipeUpdate(details),
+        onPanEnd: (details) => DataCapture.onSwipeEnd(details, 'pay_bills', (sw) => CaptureStore().addSwipe(sw)),
+        onTapDown: (details) => DataCapture.onTapDown(details),
+        onTapUp: (details) => DataCapture.onTapUp(details, 'pay_bills', (te) => CaptureStore().addTap(te)),
+        child: Scaffold(
+          backgroundColor: Colors.grey[50],
+          appBar: AppBar(
+            elevation: 0,
+            backgroundColor: Colors.green[700],
+            foregroundColor: Colors.white,
+            title: Text('Pay Bills', style: TextStyle(fontWeight: FontWeight.w600)),
+            centerTitle: true,
+          ),
+          body: FadeTransition(
+            opacity: _fadeAnimation,
+            child: SingleChildScrollView(
+              padding: EdgeInsets.all(20),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildBillTypeSelector(),
+                    SizedBox(height: 24),
+                    _buildPayFromAccount(),
+                    SizedBox(height: 24),
+                    _buildBillDetailsForm(),
+                    SizedBox(height: 32),
+                    _buildPayButton(),
+                  ],
+                ),
+              ),
             ),
           ),
         ),
@@ -211,7 +233,6 @@ class _PayBillsPageState extends State<PayBillsPage> with TickerProviderStateMix
             ),
             SizedBox(height: 20),
 
-            // Service Provider Dropdown
             DropdownButtonFormField<String>(
               decoration: InputDecoration(
                 labelText: 'Service Provider',
@@ -311,9 +332,13 @@ class _PayBillsPageState extends State<PayBillsPage> with TickerProviderStateMix
             ? Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)),
+            SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)),
             SizedBox(width: 12),
-            Text('PROCESSING...', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600)),
+            Text('PROCESSING...',
+                style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600)),
           ],
         )
             : Row(

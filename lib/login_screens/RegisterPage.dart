@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get/get.dart';
 import 'package:lottie/lottie.dart';
+import '../helpers/data_store.dart';
 import '../login_screens/LoginPage.dart';
 import '../constants.dart';
 import '../controller/simple_ui_controller.dart';
@@ -64,7 +65,7 @@ class _SignUpViewState extends State<SignUpView> {
       focusNode: _keyboardListenerFocusNode,
       onKey: (ev) => DataCapture.handleKeyEvent(
         ev,
-        'signup',
+        'RegisterPage',
             (e) => setState(() => _keyPressEvents.add(e)),
         fieldName: _usernameFocusNode.hasFocus
             ? 'username'
@@ -73,13 +74,13 @@ class _SignUpViewState extends State<SignUpView> {
             : null,
       ),
       child: GestureDetector(
-        onHorizontalDragStart: DataCapture.onSwipeStart,
-        onHorizontalDragEnd: (d) => DataCapture.onSwipeEnd(
-          d,
-          'signup',
-              (e) => setState(() => _swipeEvents.add(e)),
-        ),
-        onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+        behavior: HitTestBehavior.translucent,
+        onPanStart: (details) => DataCapture.onSwipeStart(details),
+        onPanUpdate: (details) => DataCapture.onSwipeUpdate(details),
+        onPanEnd: (details) =>
+            DataCapture.onSwipeEnd(details, 'RegisterPage', (e) {}),
+        onTapDown: (details) => DataCapture.onTapDown(details),
+        onTapUp: (details) => DataCapture.onTapUp(details, 'RegisterPage', (te) => CaptureStore().addTap(te)),
         child: Scaffold(
           backgroundColor: Colors.white,
           resizeToAvoidBottomInset: false,

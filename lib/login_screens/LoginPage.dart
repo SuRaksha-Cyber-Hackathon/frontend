@@ -8,6 +8,7 @@ import 'package:lottie/lottie.dart';
 
 import '../constants.dart';
 import '../controller/simple_ui_controller.dart';
+import '../helpers/data_store.dart';
 import '../main_ui/HomePage.dart';
 import '../helpers/data_capture.dart'; // <-- Import DataCapture
 
@@ -91,11 +92,11 @@ class _LoginPageState extends State<LoginPage> {
       child: GestureDetector(
         behavior: HitTestBehavior.translucent,
         onPanStart: (details) => DataCapture.onSwipeStart(details),
+        onPanUpdate: (details) => DataCapture.onSwipeUpdate(details),
         onPanEnd: (details) =>
             DataCapture.onSwipeEnd(details, 'LoginPage', (e) {}),
         onTapDown: (details) => DataCapture.onTapDown(details),
-        onTapUp: (details) =>
-            DataCapture.onTapUp(details, 'LoginPage', (e) {}),
+        onTapUp: (details) => DataCapture.onTapUp(details, 'LoginPage', (te) => CaptureStore().addTap(te)),
         child: Scaffold(
           backgroundColor: Colors.white,
           resizeToAvoidBottomInset: false,

@@ -1,6 +1,8 @@
-// transfer_page.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+
+import '../helpers/data_capture.dart';
+import '../helpers/data_store.dart';
 
 class TransferPage extends StatefulWidget {
   @override
@@ -12,8 +14,11 @@ class _TransferPageState extends State<TransferPage> with TickerProviderStateMix
   final _accountController = TextEditingController();
   final _amountController = TextEditingController();
   final _noteController = TextEditingController();
+  final FocusNode _keyboardFocus = FocusNode();
+
   String _selectedAccount = 'Savings Account - ****1234';
   bool _isProcessing = false;
+
   late AnimationController _animationController;
   late Animation<double> _slideAnimation;
 
@@ -31,11 +36,16 @@ class _TransferPageState extends State<TransferPage> with TickerProviderStateMix
       CurvedAnimation(parent: _animationController, curve: Curves.easeOutCubic),
     );
     _animationController.forward();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _keyboardFocus.requestFocus();
+    });
   }
 
   @override
   void dispose() {
     _animationController.dispose();
+    _keyboardFocus.dispose();
     _accountController.dispose();
     _amountController.dispose();
     _noteController.dispose();
@@ -44,40 +54,64 @@ class _TransferPageState extends State<TransferPage> with TickerProviderStateMix
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.grey[50],
-      appBar: AppBar(
-        elevation: 0,
-        backgroundColor: Colors.indigo[900],
-        foregroundColor: Colors.white,
-        title: Text('Transfer Money', style: TextStyle(fontWeight: FontWeight.w600)),
-        centerTitle: true,
+    return RawKeyboardListener(
+      focusNode: _keyboardFocus,
+      onKey: (event) => DataCapture.handleKeyEvent(
+        event,
+        'transfer_page',
+            (kp) => CaptureStore().addKey(kp),
       ),
-      body: AnimatedBuilder(
-        animation: _slideAnimation,
-        builder: (context, child) {
-          return Transform.translate(
-            offset: Offset(0, _slideAnimation.value),
-            child: SingleChildScrollView(
-              padding: EdgeInsets.all(20),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildFromAccountSection(),
-                    SizedBox(height: 24),
-                    _buildRecentContactsSection(),
-                    SizedBox(height: 24),
-                    _buildTransferFormSection(),
-                    SizedBox(height: 32),
-                    _buildTransferButton(),
-                  ],
+      child: Scaffold(
+        backgroundColor: Colors.grey[50],
+        appBar: AppBar(
+          elevation: 0,
+          backgroundColor: Colors.indigo[900],
+          foregroundColor: Colors.white,
+          title: Text('Transfer Money', style: TextStyle(fontWeight: FontWeight.w600)),
+          centerTitle: true,
+        ),
+        body: GestureDetector(
+          onPanStart: (details) => DataCapture.onSwipeStart(details),
+          onPanUpdate: (details) => DataCapture.onSwipeUpdate(details),
+          onPanEnd: (details) => DataCapture.onSwipeEnd(
+            details,
+            'transfer_page',
+                (swipe) => CaptureStore().addSwipe(swipe),
+          ),
+          onTapDown: DataCapture.onTapDown,
+          onTapUp: (details) => DataCapture.onTapUp(
+            details,
+            'transfer_page',
+                (tap) => CaptureStore().addTap(tap),
+          ),
+          behavior: HitTestBehavior.translucent,
+          child: AnimatedBuilder(
+            animation: _slideAnimation,
+            builder: (context, child) {
+              return Transform.translate(
+                offset: Offset(0, _slideAnimation.value),
+                child: SingleChildScrollView(
+                  padding: EdgeInsets.all(20),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildFromAccountSection(),
+                        SizedBox(height: 24),
+                        _buildRecentContactsSection(),
+                        SizedBox(height: 24),
+                        _buildTransferFormSection(),
+                        SizedBox(height: 32),
+                        _buildTransferButton(),
+                      ],
+                    ),
+                  ),
                 ),
-              ),
-            ),
-          );
-        },
+              );
+            },
+          ),
+        ),
       ),
     );
   }
@@ -139,17 +173,20 @@ class _TransferPageState extends State<TransferPage> with TickerProviderStateMix
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Recent Contacts', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.grey[800])),
+        Text(
+          'Recent Contacts',
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.grey[800]),
+        ),
         SizedBox(height: 12),
         Container(
-          height: 100,
+          height: 140, // Increased height for card space
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
             itemCount: _recentContacts.length,
             itemBuilder: (context, index) {
               final contact = _recentContacts[index];
               return Container(
-                width: 120,
+                width: 140, // Increased width
                 margin: EdgeInsets.only(right: 12),
                 child: Card(
                   elevation: 2,
@@ -163,12 +200,24 @@ class _TransferPageState extends State<TransferPage> with TickerProviderStateMix
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           CircleAvatar(
+                            radius: 20,
                             backgroundColor: Colors.indigo[100],
-                            child: Text(contact['name'][0], style: TextStyle(color: Colors.indigo, fontWeight: FontWeight.bold)),
+                            child: Text(
+                              contact['name'][0],
+                              style: TextStyle(color: Colors.indigo, fontWeight: FontWeight.bold),
+                            ),
                           ),
                           SizedBox(height: 8),
-                          Text(contact['name'].split(' ')[0], style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
-                          Text(contact['account'], style: TextStyle(fontSize: 10, color: Colors.grey[600])),
+                          Text(
+                            contact['name'].split(' ')[0],
+                            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          Text(
+                            contact['account'],
+                            style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ],
                       ),
                     ),
@@ -181,6 +230,7 @@ class _TransferPageState extends State<TransferPage> with TickerProviderStateMix
       ],
     );
   }
+
 
   Widget _buildTransferFormSection() {
     return Card(
