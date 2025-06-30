@@ -2,7 +2,7 @@ class KeyPressEvent {
   final int? id;
   final String keyCode;
   final String keyLabel;
-  final String eventType; // 'individual' or 'digram'
+  final String eventType;
   final int durationMs;
   final DateTime timestamp;
   final String? digramKey1;
@@ -72,7 +72,7 @@ class SwipeEvent {
     required this.durationMs,
     required this.timestamp,
     required this.contextScreen,
-    required this.direction, // <-- NEW
+    required this.direction,
   });
 
   Map<String, dynamic> toMap() => {
@@ -85,7 +85,7 @@ class SwipeEvent {
     'duration_ms': durationMs,
     'timestamp': timestamp.toIso8601String(),
     'context_screen': contextScreen,
-    'direction': direction, // <-- NEW
+    'direction': direction,
   };
 
   static SwipeEvent fromMap(Map<String, dynamic> m) => SwipeEvent(
@@ -98,10 +98,39 @@ class SwipeEvent {
     durationMs: m['duration_ms'] as int,
     timestamp: DateTime.parse(m['timestamp'] as String),
     contextScreen: m['context_screen'] as String,
-    direction: m['direction'] as String, // <-- NEW
+    direction: m['direction'] as String,
   );
 }
 
+class ScrollEvent {
+  final double startOffset;
+  final double endOffset;
+  final double distance;
+  final int durationMs;
+  final DateTime timestamp;
+  final String contextScreen;
+  final String direction;
+
+  ScrollEvent({
+    required this.startOffset,
+    required this.endOffset,
+    required this.distance,
+    required this.durationMs,
+    required this.timestamp,
+    required this.contextScreen,
+    required this.direction,
+  });
+
+  Map<String, dynamic> toMap() => {
+    'startOffset': startOffset,
+    'endOffset': endOffset,
+    'distance': distance,
+    'durationMs': durationMs,
+    'timestamp': timestamp.toIso8601String(),
+    'contextScreen': contextScreen,
+    'direction': direction,
+  };
+}
 
 class TapEvent {
   final int? id;
@@ -134,6 +163,46 @@ class TapEvent {
     x: (m['x'] as num).toDouble(),
     y: (m['y'] as num).toDouble(),
     durationMs: m['duration_ms'] as int,
+    timestamp: DateTime.parse(m['timestamp'] as String),
+    contextScreen: m['context_screen'] as String,
+  );
+}
+
+class SensorEvent {
+  final int? id;
+  final String type; // 'accelerometer' or 'gyroscope'
+  final double x;
+  final double y;
+  final double z;
+  final DateTime timestamp;
+  final String contextScreen;
+
+  SensorEvent({
+    this.id,
+    required this.type,
+    required this.x,
+    required this.y,
+    required this.z,
+    required this.timestamp,
+    required this.contextScreen,
+  });
+
+  Map<String, dynamic> toMap() => {
+    'id': id,
+    'type': type,
+    'x': x,
+    'y': y,
+    'z': z,
+    'timestamp': timestamp.toIso8601String(),
+    'context_screen': contextScreen,
+  };
+
+  static SensorEvent fromMap(Map<String, dynamic> m) => SensorEvent(
+    id: m['id'] as int?,
+    type: m['type'] as String,
+    x: (m['x'] as num).toDouble(),
+    y: (m['y'] as num).toDouble(),
+    z: (m['z'] as num).toDouble(),
     timestamp: DateTime.parse(m['timestamp'] as String),
     contextScreen: m['context_screen'] as String,
   );

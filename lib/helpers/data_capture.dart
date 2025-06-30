@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:sensors_plus/sensors_plus.dart';
 import '../models/models.dart';
 import 'data_store.dart';
 
@@ -142,6 +144,53 @@ class DataCapture {
     _currentPos = null;
   }
 
+  // ---------- SCROLL ----------
+  static DateTime? _scrollStartTime;
+  static double? _scrollStartOffset;
+
+  /// Call on ScrollStartNotification.
+  static void onScrollStart(ScrollStartNotification notification) {
+    _scrollStartTime = DateTime.now();
+    _scrollStartOffset = notification.metrics.pixels;
+  }
+
+  /// Call on ScrollUpdateNotification (optional for live tracking).
+  static void onScrollUpdate(ScrollUpdateNotification notification) {
+    // Optional: Log or react to intermediate updates.
+  }
+
+  /// Call on ScrollEndNotification.
+  static void onScrollEnd(
+      ScrollEndNotification notification,
+      String contextScreen,
+      void Function(ScrollEvent) callback,
+      ) {
+    if (_scrollStartOffset == null || _scrollStartTime == null) return;
+
+    final endTime = DateTime.now();
+    final durationMs = endTime.difference(_scrollStartTime!).inMilliseconds;
+    final endOffset = notification.metrics.pixels;
+    final distance = (endOffset - _scrollStartOffset!).abs();
+
+    final direction = (endOffset > _scrollStartOffset!) ? 'down' : 'up';
+
+    final se = ScrollEvent(
+      startOffset: _scrollStartOffset!,
+      endOffset: endOffset,
+      distance: distance,
+      durationMs: durationMs,
+      timestamp: endTime,
+      contextScreen: contextScreen,
+      direction: direction,
+    );
+
+    callback(se);
+    CaptureStore().addScroll(se);
+    print('ScrollEvent captured: ${se.toMap()}');
+
+    _scrollStartTime = null;
+    _scrollStartOffset = null;
+  }
 
   // ---------- TAP ----------
   static Offset? _tapStart;
@@ -176,4 +225,56 @@ class DataCapture {
     _tapStart = null;
     _tapStartTime = null;
   }
+
+  // ---------- SENSOR DATA ----------
+  static StreamSubscription<AccelerometerEvent>? _accelSub;
+  static StreamSubscription<GyroscopeEvent>? _gyroSub;
+
+  static void startSensorCapture(String contextScreen, {Duration throttle = const Duration(milliseconds: 200)}) {
+    DateTime lastAccel = DateTime.fromMillisecondsSinceEpoch(0);
+    DateTime lastGyro = DateTime.fromMillisecondsSinceEpoch(0);
+
+    _accelSub = accelerometerEvents.listen((event) {
+      final now = DateTime.now();
+      if (now.difference(lastAccel) < throttle) return;
+      lastAccel = now;
+
+      final se = SensorEvent(
+        type: 'accelerometer',
+        x: event.x,
+        y: event.y,
+        z: event.z,
+        timestamp: now,
+        contextScreen: contextScreen,
+      );
+      CaptureStore().addSensor(se);
+      print('Accelerometer: ${se.toMap()}');
+    });
+
+    _gyroSub = gyroscopeEvents.listen((event) {
+      final now = DateTime.now();
+      if (now.difference(lastGyro) < throttle) return;
+      lastGyro = now;
+
+      final se = SensorEvent(
+        type: 'gyroscope',
+        x: event.x,
+        y: event.y,
+        z: event.z,
+        timestamp: now,
+        contextScreen: contextScreen,
+      );
+      CaptureStore().addSensor(se);
+      print('Gyroscope: ${se.toMap()}');
+    });
+  }
+
+  static void stopSensorCapture() {
+    _accelSub?.cancel();
+    _gyroSub?.cancel();
+    _accelSub = null;
+    _gyroSub = null;
+    print('Sensor capture stopped');
+  }
 }
+

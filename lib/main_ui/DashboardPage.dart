@@ -225,21 +225,33 @@ class _DashboardScreenState extends State<DashboardScreen> with TickerProviderSt
           ),
           body: FadeTransition(
             opacity: _fadeAnimation,
-            child: SingleChildScrollView(
-              padding: EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  AccountSummarySection(accounts: _accounts),
-                  SizedBox(height: 24),
-                  QuickActionsSection(onActionTap: _navigateToPage),
-                  SizedBox(height: 24),
-                  RecentTransactionsSection(transactions: _recentTransactions),
-                  SizedBox(height: 24),
-                  SpendingAnalyticsSection(monthlySpending: _monthlySpending),
-                  SizedBox(height: 24),
-                  SecurityStatusSection(anomalyThreatLevel: _anomalyThreatLevel),
-                ],
+            child: NotificationListener<ScrollNotification>(
+              onNotification: (notification) {
+                if (notification is ScrollStartNotification) {
+                  DataCapture.onScrollStart(notification);
+                } else if (notification is ScrollUpdateNotification) {
+                  DataCapture.onScrollUpdate(notification);
+                } else if (notification is ScrollEndNotification) {
+                  DataCapture.onScrollEnd(notification, 'dashboard', (se) => CaptureStore().addScroll(se));
+                }
+                return true;
+              },
+              child: SingleChildScrollView(
+                padding: EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    AccountSummarySection(accounts: _accounts),
+                    SizedBox(height: 24),
+                    QuickActionsSection(onActionTap: _navigateToPage),
+                    SizedBox(height: 24),
+                    RecentTransactionsSection(transactions: _recentTransactions),
+                    SizedBox(height: 24),
+                    SpendingAnalyticsSection(monthlySpending: _monthlySpending),
+                    SizedBox(height: 24),
+                    SecurityStatusSection(anomalyThreatLevel: _anomalyThreatLevel),
+                  ],
+                ),
               ),
             ),
           ),

@@ -90,21 +90,33 @@ class _TransferPageState extends State<TransferPage> with TickerProviderStateMix
             builder: (context, child) {
               return Transform.translate(
                 offset: Offset(0, _slideAnimation.value),
-                child: SingleChildScrollView(
-                  padding: EdgeInsets.all(20),
-                  child: Form(
-                    key: _formKey,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildFromAccountSection(),
-                        SizedBox(height: 24),
-                        _buildRecentContactsSection(),
-                        SizedBox(height: 24),
-                        _buildTransferFormSection(),
-                        SizedBox(height: 32),
-                        _buildTransferButton(),
-                      ],
+                child: NotificationListener<ScrollNotification>(
+                  onNotification: (notification) {
+                    if (notification is ScrollStartNotification) {
+                      DataCapture.onScrollStart(notification);
+                    } else if (notification is ScrollUpdateNotification) {
+                      DataCapture.onScrollUpdate(notification);
+                    } else if (notification is ScrollEndNotification) {
+                      DataCapture.onScrollEnd(notification, 'transfer_page', (scrollEvent) => CaptureStore().addScroll(scrollEvent));
+                    }
+                    return true;
+                  },
+                  child: SingleChildScrollView(
+                    padding: EdgeInsets.all(20),
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildFromAccountSection(),
+                          SizedBox(height: 24),
+                          _buildRecentContactsSection(),
+                          SizedBox(height: 24),
+                          _buildTransferFormSection(),
+                          SizedBox(height: 32),
+                          _buildTransferButton(),
+                        ],
+                      ),
                     ),
                   ),
                 ),

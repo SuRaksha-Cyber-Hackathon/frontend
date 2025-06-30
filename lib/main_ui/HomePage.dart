@@ -1,12 +1,15 @@
+import 'dart:async';
 import 'dart:math';
 import 'package:crazy_bankers/main_ui/AddFundsPage.dart';
 import 'package:crazy_bankers/main_ui/PayBillsPage.dart';
 import 'package:crazy_bankers/main_ui/StatementsPage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:sensors_plus/sensors_plus.dart';
 import '../helpers/data_capture.dart';
 import '../helpers/data_store.dart';
 import '../login_screens/LoginPage.dart';
+import '../models/models.dart';
 import 'DashboardPage.dart';
 
 class HomePage extends StatefulWidget {
@@ -21,6 +24,11 @@ class _HomePageState extends State<HomePage> {
   int _selectedIndex = 0;
   final FocusNode _keyboardFocus = FocusNode();
   int _anomalyThreatLevel = 25;
+
+  StreamSubscription<AccelerometerEvent>? _accelSub;
+  StreamSubscription<GyroscopeEvent>? _gyroSub;
+
+
 
   static const List<String> _titles = [
     'Dashboard',
@@ -40,13 +48,55 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) => _keyboardFocus.requestFocus());
+
+    DateTime lastAccel = DateTime.now().subtract(const Duration(milliseconds: 1000));
+    DateTime lastGyro = DateTime.now().subtract(const Duration(milliseconds: 1000));
+
+    _accelSub = accelerometerEvents.listen((event) {
+      final now = DateTime.now();
+      if (now.difference(lastAccel).inMilliseconds >= 1000) {
+        lastAccel = now;
+        final sensorEvent = SensorEvent(
+          type: 'accelerometer',
+          x: event.x,
+          y: event.y,
+          z: event.z,
+          timestamp: now,
+          contextScreen: 'home',
+        );
+        CaptureStore().addSensor(sensorEvent);
+        print('Accelerometer: ${sensorEvent.toMap()}');
+      }
+    });
+
+    _gyroSub = gyroscopeEvents.listen((event) {
+      final now = DateTime.now();
+      if (now.difference(lastGyro).inMilliseconds >= 1000) {
+        lastGyro = now;
+        final sensorEvent = SensorEvent(
+          type: 'gyroscope',
+          x: event.x,
+          y: event.y,
+          z: event.z,
+          timestamp: now,
+          contextScreen: 'home',
+        );
+        CaptureStore().addSensor(sensorEvent);
+        print('Gyroscope: ${sensorEvent.toMap()}');
+      }
+    });
   }
+
+
 
   @override
   void dispose() {
     _keyboardFocus.dispose();
+    _accelSub?.cancel();
+    _gyroSub?.cancel();
     super.dispose();
   }
+
 
   void _onItemTapped(int index) {
     setState(() => _selectedIndex = index);
@@ -92,53 +142,5 @@ class _HomePageState extends State<HomePage> {
         ),
       ),
     );
-  }
-
-  void _simulateAnomalyChange() {
-    final isSevere = Random().nextBool();
-    if (isSevere) {
-      setState(() => _anomalyThreatLevel = 80 + Random().nextInt(21));
-      final unlockTime = DateTime.now().add(Duration(seconds: 30));
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (ctx) => AlertDialog(
-          title: Text('Security Alert', style: TextStyle(fontWeight: FontWeight.bold)),
-          content: Text('Severe anomaly detected. App locked for 30 seconds.'),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(ctx).pop();
-                Navigator.pushAndRemoveUntil(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => LoginPage(lockUntil: unlockTime),
-                  ),
-                      (_) => false,
-                );
-              },
-              child: Text('OK'),
-            ),
-          ],
-        ),
-      );
-    } else {
-      setState(() => _anomalyThreatLevel = 30 + Random().nextInt(30));
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Anomaly detected. Please log in again.'),
-          duration: Duration(seconds: 2),
-        ),
-      );
-      Future.delayed(const Duration(milliseconds: 500), () {
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(
-            builder: (_) => const LoginPage(lockUntil: null),
-          ),
-              (_) => false,
-        );
-      });
-    }
   }
 }

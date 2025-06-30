@@ -83,30 +83,42 @@ class _StatementsPageState extends State<StatementsPage> {
                 ),
                 const SizedBox(height: 24),
                 Expanded(
-                  child: ListView.separated(
-                    itemCount: _statements.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 8),
-                    itemBuilder: (context, index) {
-                      final s = _statements[index];
-                      return Card(
-                        elevation: 2,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        child: ListTile(
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                          leading: CircleAvatar(
-                            backgroundColor: Colors.indigo[100],
-                            child: Icon(Icons.description, color: Colors.indigo[700]),
-                          ),
-                          title: Text(s['month'], style: TextStyle(fontWeight: FontWeight.w600)),
-                          subtitle: Text('${s['type']} • ${s['size']} • ${s['date']}'),
-                          trailing: IconButton(
-                            icon: Icon(Icons.download_for_offline_outlined, color: Colors.indigo[800]),
-                            tooltip: 'Download ${s['month']}',
-                            onPressed: () => _downloadStatement(s['month']),
-                          ),
-                        ),
-                      );
+                  child: NotificationListener<ScrollNotification>(
+                    onNotification: (notification) {
+                      if (notification is ScrollStartNotification) {
+                        DataCapture.onScrollStart(notification);
+                      } else if (notification is ScrollUpdateNotification) {
+                        DataCapture.onScrollUpdate(notification);
+                      } else if (notification is ScrollEndNotification) {
+                        DataCapture.onScrollEnd(notification, 'statements', (se) => CaptureStore().addScroll(se));
+                      }
+                      return true;
                     },
+                    child: ListView.separated(
+                      itemCount: _statements.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 8),
+                      itemBuilder: (context, index) {
+                        final s = _statements[index];
+                        return Card(
+                          elevation: 2,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          child: ListTile(
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            leading: CircleAvatar(
+                              backgroundColor: Colors.indigo[100],
+                              child: Icon(Icons.description, color: Colors.indigo[700]),
+                            ),
+                            title: Text(s['month'], style: TextStyle(fontWeight: FontWeight.w600)),
+                            subtitle: Text('${s['type']} • ${s['size']} • ${s['date']}'),
+                            trailing: IconButton(
+                              icon: Icon(Icons.download_for_offline_outlined, color: Colors.indigo[800]),
+                              tooltip: 'Download ${s['month']}',
+                              onPressed: () => _downloadStatement(s['month']),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
                   ),
                 ),
               ],
