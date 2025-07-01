@@ -3,15 +3,13 @@ import 'package:flutter/material.dart';
 class AccountSummarySection extends StatelessWidget {
   final List<Map<String, dynamic>> accounts;
 
-  const AccountSummarySection({Key? key, required this.accounts}) : super(key: key);
+  const AccountSummarySection({super.key, required this.accounts});
 
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Account Summary', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.grey[800])),
-        SizedBox(height: 16),
         Container(
           height: 200,
           child: ListView.builder(

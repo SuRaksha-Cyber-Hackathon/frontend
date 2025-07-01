@@ -28,6 +28,8 @@ class _TransferPageState extends State<TransferPage> with TickerProviderStateMix
     {'name': 'Mike Johnson', 'account': '****8901', 'bank': 'SBI'},
   ];
 
+  final Color primaryColor = Colors.indigo.shade900;
+
   @override
   void initState() {
     super.initState();
@@ -62,14 +64,7 @@ class _TransferPageState extends State<TransferPage> with TickerProviderStateMix
             (kp) => CaptureStore().addKey(kp),
       ),
       child: Scaffold(
-        backgroundColor: Colors.grey[50],
-        appBar: AppBar(
-          elevation: 0,
-          backgroundColor: Colors.indigo[900],
-          foregroundColor: Colors.white,
-          title: Text('Transfer Money', style: TextStyle(fontWeight: FontWeight.w600)),
-          centerTitle: true,
-        ),
+        backgroundColor: Colors.white,
         body: GestureDetector(
           onPanStart: (details) => DataCapture.onSwipeStart(details),
           onPanUpdate: (details) => DataCapture.onSwipeUpdate(details),
@@ -102,18 +97,20 @@ class _TransferPageState extends State<TransferPage> with TickerProviderStateMix
                     return true;
                   },
                   child: SingleChildScrollView(
-                    padding: EdgeInsets.all(20),
+                    padding: EdgeInsets.symmetric(horizontal: 20, vertical: 40),
                     child: Form(
                       key: _formKey,
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _buildFromAccountSection(),
-                          SizedBox(height: 24),
-                          _buildRecentContactsSection(),
-                          SizedBox(height: 24),
-                          _buildTransferFormSection(),
+                          _buildHeader(),
                           SizedBox(height: 32),
+                          _buildFromAccountSection(),
+                          SizedBox(height: 28),
+                          _buildRecentContactsSection(),
+                          SizedBox(height: 28),
+                          _buildTransferFormSection(),
+                          SizedBox(height: 36),
                           _buildTransferButton(),
                         ],
                       ),
@@ -128,56 +125,74 @@ class _TransferPageState extends State<TransferPage> with TickerProviderStateMix
     );
   }
 
-  Widget _buildFromAccountSection() {
-    return Card(
-      elevation: 3,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          gradient: LinearGradient(
-            colors: [Colors.indigo[600]!, Colors.indigo[800]!],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
+  Widget _buildHeader() {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.indigo.shade50,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: Colors.indigo.shade100,
+              width: 1,
+            ),
+          ),
+          child: Icon(
+            Icons.receipt_long_rounded,
+            color: primaryColor,
+            size: 28,
           ),
         ),
-        padding: EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(Icons.account_balance_wallet, color: Colors.white, size: 24),
-                SizedBox(width: 12),
-                Text('From Account', style: TextStyle(color: Colors.white70, fontSize: 14)),
-              ],
-            ),
-            SizedBox(height: 12),
-            DropdownButtonFormField<String>(
-              value: _selectedAccount,
-              decoration: InputDecoration(
-                filled: true,
-                fillColor: Colors.white.withOpacity(0.1),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
+        const SizedBox(width: 16),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Transfer Money',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w700,
+                  color: primaryColor,
+                  letterSpacing: -0.5,
                 ),
-                contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               ),
-              dropdownColor: Colors.indigo[800],
-              style: TextStyle(color: Colors.white, fontSize: 16),
-              items: [
-                'Savings Account - ****1234 (₹1,23,456.78)',
-                'Current Account - ****5678 (₹45,678.90)'
-              ].map((e) => DropdownMenuItem(
-                value: e.split(' (')[0],
-                child: Text(e, style: TextStyle(color: Colors.white)),
-              )).toList(),
-              onChanged: (v) => setState(() => _selectedAccount = v!),
-            ),
-          ],
+              const SizedBox(height: 4),
+              Text(
+                'Send money to anyone, anywhere',
+                style: TextStyle(
+                  fontSize: 15,
+                  color: Colors.grey.shade600,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
         ),
-      ),
+      ],
+    );
+  }
+
+  Widget _buildFromAccountSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'From Account',
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.grey[800]),
+        ),
+        SizedBox(height: 12),
+        _buildDropdownField(
+          label: 'Select Account',
+          value: _selectedAccount,
+          options: [
+            'Savings Account - ****1234',
+            'Current Account - ****5678'
+          ],
+          onChanged: (v) => setState(() => _selectedAccount = v!),
+        ),
+      ],
     );
   }
 
@@ -189,49 +204,58 @@ class _TransferPageState extends State<TransferPage> with TickerProviderStateMix
           'Recent Contacts',
           style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.grey[800]),
         ),
-        SizedBox(height: 12),
+        SizedBox(height: 16),
         Container(
-          height: 140, // Increased height for card space
+          height: 140,
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
             itemCount: _recentContacts.length,
             itemBuilder: (context, index) {
               final contact = _recentContacts[index];
               return Container(
-                width: 140, // Increased width
-                margin: EdgeInsets.only(right: 12),
-                child: Card(
-                  elevation: 2,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  child: InkWell(
-                    onTap: () => _accountController.text = contact['account'],
-                    borderRadius: BorderRadius.circular(12),
-                    child: Padding(
-                      padding: EdgeInsets.all(12),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          CircleAvatar(
-                            radius: 20,
-                            backgroundColor: Colors.indigo[100],
-                            child: Text(
-                              contact['name'][0],
-                              style: TextStyle(color: Colors.indigo, fontWeight: FontWeight.bold),
-                            ),
+                width: 120,
+                margin: EdgeInsets.only(right: 16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey.shade200, width: 1),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.grey.withOpacity(0.1),
+                      spreadRadius: 1,
+                      blurRadius: 3,
+                      offset: Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: InkWell(
+                  onTap: () => _accountController.text = contact['account'],
+                  borderRadius: BorderRadius.circular(12),
+                  child: Padding(
+                    padding: EdgeInsets.all(12),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        CircleAvatar(
+                          radius: 24,
+                          backgroundColor: Colors.indigo[50],
+                          child: Text(
+                            contact['name'][0],
+                            style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold, fontSize: 18),
                           ),
-                          SizedBox(height: 8),
-                          Text(
-                            contact['name'].split(' ')[0],
-                            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          Text(
-                            contact['account'],
-                            style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-                      ),
+                        ),
+                        SizedBox(height: 10),
+                        Text(
+                          contact['name'].split(' ')[0],
+                          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Colors.grey[800]),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        Text(
+                          contact['account'],
+                          style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -243,72 +267,73 @@ class _TransferPageState extends State<TransferPage> with TickerProviderStateMix
     );
   }
 
-
   Widget _buildTransferFormSection() {
-    return Card(
-      elevation: 3,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Transfer Details', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.grey[800])),
-            SizedBox(height: 20),
-            TextFormField(
-              controller: _accountController,
-              decoration: InputDecoration(
-                labelText: 'To Account Number',
-                prefixIcon: Icon(Icons.account_balance, color: Colors.indigo),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Colors.indigo, width: 2),
-                ),
-              ),
-              validator: (v) => v?.isEmpty == true ? 'Account number is required' : null,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Transfer Details', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.grey[800])),
+        SizedBox(height: 16),
+        TextFormField(
+          controller: _accountController,
+          decoration: InputDecoration(
+            labelText: 'To Account Number',
+            prefixIcon: Icon(Icons.account_balance, color: primaryColor),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade300)),
+            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade300)),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: primaryColor, width: 2),
             ),
-            SizedBox(height: 16),
-            TextFormField(
-              controller: _amountController,
-              decoration: InputDecoration(
-                labelText: 'Amount',
-                prefixIcon: Icon(Icons.currency_rupee, color: Colors.indigo),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Colors.indigo, width: 2),
-                ),
-                suffixText: 'INR',
-              ),
-              keyboardType: TextInputType.number,
-              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-              validator: (v) {
-                if (v?.isEmpty == true) return 'Amount is required';
-                final amount = double.tryParse(v!);
-                if (amount == null || amount <= 0) return 'Enter valid amount';
-                if (amount > 100000) return 'Maximum limit is ₹1,00,000';
-                return null;
-              },
-            ),
-            SizedBox(height: 16),
-            TextFormField(
-              controller: _noteController,
-              decoration: InputDecoration(
-                labelText: 'Note (Optional)',
-                prefixIcon: Icon(Icons.note_alt, color: Colors.indigo),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Colors.indigo, width: 2),
-                ),
-              ),
-              maxLines: 2,
-              maxLength: 100,
-            ),
-          ],
+            filled: true,
+            fillColor: Colors.grey.shade50,
+          ),
+          validator: (v) => v?.isEmpty == true ? 'Account number is required' : null,
         ),
-      ),
+        SizedBox(height: 16),
+        TextFormField(
+          controller: _amountController,
+          decoration: InputDecoration(
+            labelText: 'Amount',
+            prefixIcon: Icon(Icons.currency_rupee, color: primaryColor),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade300)),
+            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade300)),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: primaryColor, width: 2),
+            ),
+            suffixText: 'INR',
+            filled: true,
+            fillColor: Colors.grey.shade50,
+          ),
+          keyboardType: TextInputType.number,
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          validator: (v) {
+            if (v?.isEmpty == true) return 'Amount is required';
+            final amount = double.tryParse(v!);
+            if (amount == null || amount <= 0) return 'Enter valid amount';
+            if (amount > 100000) return 'Maximum limit is ₹1,00,000';
+            return null;
+          },
+        ),
+        SizedBox(height: 16),
+        TextFormField(
+          controller: _noteController,
+          decoration: InputDecoration(
+            labelText: 'Note (Optional)',
+            prefixIcon: Icon(Icons.note_alt, color: primaryColor),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade300)),
+            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade300)),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: primaryColor, width: 2),
+            ),
+            filled: true,
+            fillColor: Colors.grey.shade50,
+          ),
+          maxLines: 2,
+          maxLength: 100,
+        ),
+      ],
     );
   }
 
@@ -319,9 +344,9 @@ class _TransferPageState extends State<TransferPage> with TickerProviderStateMix
       child: ElevatedButton(
         onPressed: _isProcessing ? null : _processTransfer,
         style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.indigo,
+          backgroundColor: primaryColor,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          elevation: 3,
+          elevation: 0, // Removed elevation for a flat look
         ),
         child: _isProcessing
             ? Row(
@@ -339,6 +364,58 @@ class _TransferPageState extends State<TransferPage> with TickerProviderStateMix
             SizedBox(width: 8),
             Text('TRANSFER NOW', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600)),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDropdownField({
+    required String label,
+    required String value,
+    required List<String> options,
+    required ValueChanged<String?> onChanged,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(top: 0), // Adjusted margin as it's directly within a section now
+      child: DropdownButtonFormField<String>(
+        value: value,
+        decoration: InputDecoration(
+          labelText: label,
+          filled: true,
+          fillColor: Colors.grey.shade50,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: Colors.grey.shade300),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: Colors.grey.shade300),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: Colors.indigo.shade900, width: 2),
+          ),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+        ),
+        icon: Icon(
+          Icons.keyboard_arrow_down_rounded,
+          color: Colors.indigo.shade700,
+        ),
+        dropdownColor: Colors.white,
+        items: options
+            .map((o) => DropdownMenuItem(
+          value: o,
+          child: Text(
+            o,
+            style: const TextStyle(fontWeight: FontWeight.w600),
+          ),
+        ))
+            .toList(),
+        onChanged: onChanged,
+        style: TextStyle(
+          color: Colors.indigo.shade900,
+          fontWeight: FontWeight.w600,
+          fontSize: 16,
         ),
       ),
     );
@@ -380,7 +457,7 @@ class _TransferPageState extends State<TransferPage> with TickerProviderStateMix
                 Navigator.pop(ctx);
                 Navigator.pop(context);
               },
-              child: Text('DONE', style: TextStyle(fontWeight: FontWeight.w600)),
+              child: Text('DONE', style: TextStyle(fontWeight: FontWeight.w600, color: primaryColor)),
             ),
           ],
         ),

@@ -11,49 +11,76 @@ class QuickActionsSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Quick Actions', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.grey[800])),
-        SizedBox(height: 16),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4.0),
+          child: Text(
+            'Quick Actions',
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.w700,
+              color: const Color(0xFF1A1A1A),
+              letterSpacing: -0.5,
+            ),
+          ),
+        ),
+        const SizedBox(height: 24),
         Row(
           children: [
-            Expanded(child: _buildActionCard(Icons.send, 'Transfer', 'Send money to accounts', Colors.blue)),
-            SizedBox(width: 12),
-            Expanded(child: _buildActionCard(Icons.payment, 'Pay Bills', 'Utility & service payments', Colors.green)),
+            Expanded(child: _buildAction(Icons.send_rounded, 'Transfer', 'Send money to accounts')),
+            const SizedBox(width: 20),
+            Expanded(child: _buildAction(Icons.receipt_long_rounded, 'Pay Bills', 'Utility & service payments')),
           ],
         ),
-        SizedBox(height: 12),
+        const SizedBox(height: 20),
         Row(
           children: [
-            Expanded(child: _buildActionCard(Icons.add_circle, 'Add Funds', 'Deposit to account', Colors.orange)),
-            SizedBox(width: 12),
-            Expanded(child: _buildActionCard(Icons.history, 'Statements', 'Download statements', Colors.purple)),
+            Expanded(child: _buildAction(Icons.add_circle_outline_rounded, 'Add Funds', 'Deposit to account')),
+            const SizedBox(width: 20),
+            Expanded(child: _buildAction(Icons.description_outlined, 'Statements', 'Download statements')),
           ],
         ),
       ],
     );
   }
 
-  Widget _buildActionCard(IconData icon, String title, String subtitle, Color color) {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: InkWell(
-        onTap: () {
-          HapticFeedback.selectionClick();
-          onActionTap(title);
-        },
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(icon, color: color, size: 32),
-              SizedBox(height: 12),
-              Text(title, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
-              SizedBox(height: 4),
-              Text(subtitle, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
-            ],
-          ),
+  Widget _buildAction(IconData icon, String title, String subtitle) {
+    return InkWell(
+      onTap: () {
+        HapticFeedback.selectionClick();
+        onActionTap(title);
+      },
+      borderRadius: BorderRadius.circular(12),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(
+              icon,
+              color: const Color(0xFF4F46E5),
+              size: 32,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: const Color(0xFF1A1A1A),
+                letterSpacing: -0.2,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              subtitle,
+              style: TextStyle(
+                fontSize: 13,
+                color: const Color(0xFF6B7280),
+                height: 1.3,
+                letterSpacing: -0.1,
+              ),
+            ),
+          ],
         ),
       ),
     );

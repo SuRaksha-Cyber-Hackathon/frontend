@@ -12,52 +12,112 @@ class SpendingAnalyticsSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Spending Analytics', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.grey[800])),
-        SizedBox(height: 16),
-        Card(
-          elevation: 2,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          child: Padding(
-            padding: EdgeInsets.all(20),
-            child: SingleChildScrollView(
-              child: Column(
-                children: [
-                  const Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4.0),
+          child: Text(
+            'Spending Analytics',
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.w700,
+              color: const Color(0xFF1A1A1A),
+              letterSpacing: -0.5,
+            ),
+          ),
+        ),
+        const SizedBox(height: 24),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Monthly Spending',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: const Color(0xFF6B7280),
+                    letterSpacing: -0.1,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '₹51,000',
+                  style: TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.w800,
+                    color: const Color(0xFF4F46E5),
+                    letterSpacing: -0.8,
+                  ),
+                ),
+              ],
+            ),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.trending_down_rounded,
+                  color: const Color(0xFF4F46E5),
+                  size: 16,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  '12% vs last month',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFF4F46E5),
+                    letterSpacing: -0.1,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+        const SizedBox(height: 32),
+        Container(
+          height: 160,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: monthlySpending.asMap().entries.map((entry) {
+              final index = entry.key;
+              final data = entry.value;
+              final height = (data['amount'] / maxAmount) * 120;
+              final isHighest = data['amount'] == maxAmount;
+
+              return Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.end,
                     children: [
-                      Text('Monthly Spending', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
-                      Text('₹51,000', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.indigo)),
+                      Container(
+                        width: double.infinity,
+                        height: height,
+                        margin: const EdgeInsets.symmetric(horizontal: 2),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF4F46E5),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        data['month'],
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: isHighest
+                              ? const Color(0xFF1A1A1A)
+                              : const Color(0xFF6B7280),
+                          letterSpacing: -0.1,
+                        ),
+                      ),
                     ],
                   ),
-                  SizedBox(height: 20),
-                  Container(
-                    height: 140,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: monthlySpending.map((data) {
-                        final height = (data['amount'] / maxAmount) * 100;
-                        return Column(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            Container(
-                              width: 24,
-                              height: height,
-                              decoration: BoxDecoration(
-                                color: Colors.indigo,
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                            ),
-                            SizedBox(height: 8),
-                            Text(data['month'], style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
-                          ],
-                        );
-                      }).toList(),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+                ),
+              );
+            }).toList(),
           ),
         ),
       ],

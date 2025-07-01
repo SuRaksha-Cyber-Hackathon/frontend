@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get/get.dart';
 import 'package:lottie/lottie.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../constants.dart';
 import '../controller/simple_ui_controller.dart';
@@ -295,24 +296,32 @@ class _LoginPageState extends State<LoginPage> {
             ? null
             : () async {
           if (_formKey.currentState!.validate()) {
-            final isValid = await validateLogin(
-                nameController.text, passwordController.text);
+            final username = nameController.text;
+            final password = passwordController.text;
+
+            final isValid = await validateLogin(username, password);
 
             if (!mounted) return;
 
             if (isValid) {
-              Navigator.push(
+              final prefs = await SharedPreferences.getInstance();
+              await prefs.setBool('isLoggedIn', true);
+              await prefs.setString('username', username);
+
+              if (!mounted) return;
+
+              Navigator.pushAndRemoveUntil(
                 context,
                 CupertinoPageRoute(
-                  builder: (ctx) =>
-                      HomePage(username: nameController.text),
-                ),
+                  builder: (ctx) => HomePage(username: username)),
+                    (route) => false,
               );
             } else {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                    content:
-                    Text('Invalid credentials. Please try again.')),
+                  content:
+                  Text('Invalid credentials. Please try again.'),
+                ),
               );
             }
           }

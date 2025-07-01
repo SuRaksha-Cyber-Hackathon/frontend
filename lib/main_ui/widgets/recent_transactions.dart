@@ -10,46 +10,87 @@ class RecentTransactionsSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text('Recent Transactions', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.grey[800])),
-            TextButton(
-              onPressed: () {},
-              child: Text('VIEW ALL', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
-            ),
-          ],
-        ),
-        SizedBox(height: 16),
-        Card(
-          elevation: 2,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          child: Column(
-            children: transactions.map((transaction) {
-              final isCredit = transaction['type'] == 'Credit';
-              return ListTile(
-                leading: CircleAvatar(
-                  backgroundColor: isCredit ? Colors.green[100] : Colors.red[100],
-                  child: Icon(
-                    isCredit ? Icons.arrow_downward : Icons.arrow_upward,
-                    color: isCredit ? Colors.green : Colors.red,
-                    size: 20,
-                  ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Recent Transactions',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF1A1A1A),
+                  letterSpacing: -0.5,
                 ),
-                title: Text(transaction['description'], style: TextStyle(fontWeight: FontWeight.w600)),
-                subtitle: Text('${transaction['date']} • ${transaction['category']}'),
-                trailing: Text(
-                  '${isCredit ? '+' : '-'}₹${transaction['amount'].toStringAsFixed(2)}',
+              ),
+              TextButton(
+                onPressed: () {},
+                child: Text(
+                  'VIEW ALL',
                   style: TextStyle(
-                    color: isCredit ? Colors.green : Colors.red,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFF4F46E5),
+                    letterSpacing: 0.5,
                   ),
                 ),
-              );
-            }).toList(),
+              ),
+            ],
           ),
         ),
+        const SizedBox(height: 24),
+        ...transactions.map((transaction) {
+          final isCredit = transaction['type'] == 'Credit';
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: Row(
+              children: [
+                Icon(
+                  isCredit ? Icons.arrow_downward_rounded : Icons.arrow_upward_rounded,
+                  color: const Color(0xFF4F46E5),
+                  size: 24,
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        transaction['description'],
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xFF1A1A1A),
+                          letterSpacing: -0.2,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${transaction['date']} • ${transaction['category']}',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: const Color(0xFF6B7280),
+                          letterSpacing: -0.1,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Text(
+                  '${isCredit ? '+' : '-'}₹${transaction['amount'].toStringAsFixed(2)}',
+                  style: TextStyle(
+                    color: const Color(0xFF4F46E5),
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.2,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }).toList(),
       ],
     );
   }
