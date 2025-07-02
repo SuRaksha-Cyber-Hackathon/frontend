@@ -7,10 +7,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:sensors_plus/sensors_plus.dart';
 import '../helpers/data_capture.dart';
+import '../helpers/data_sender.dart';
 import '../helpers/data_store.dart';
 import '../login_screens/LoginPage.dart';
 import '../models/models.dart';
 import 'DashboardPage.dart';
+import 'ProfilePage.dart';
 import 'TransferPage.dart';
 
 class HomePage extends StatefulWidget {
@@ -214,22 +216,38 @@ class _HomePageState extends State<HomePage> {
                 (kp) => CaptureStore().addKey(kp),
           ),
       child: Scaffold(
+        drawer: const ProfileSidebar(),
         appBar: AppBar(
           backgroundColor: Colors.white,
           elevation: 0,
+          automaticallyImplyLeading: false, // disables default hamburger icon
+
+          leading: Builder(
+            builder: (context) {
+              return IconButton(
+                padding: EdgeInsets.all(0),
+                iconSize: 40,
+                icon: CircleAvatar(
+                  backgroundColor: Colors.indigo[100],
+                  radius: 20,
+                  child: Icon(Icons.person, color: Colors.indigo),
+                ),
+                onPressed: () {
+                  Scaffold.of(context).openDrawer();
+                },
+                tooltip: 'Open Profile Sidebar',
+              );
+            },
+          ),
+
           title: Row(
             children: [
-              CircleAvatar(
-                radius: 20,
-                backgroundColor: Colors.indigo[100],
-                child: Icon(Icons.person, color: Colors.indigo[900]),
-              ),
             ],
           ),
+
           actions: [
             IconButton(
-              icon: Icon(
-                  Icons.notifications_none_outlined, color: Colors.grey[800]),
+              icon: Icon(Icons.notifications_none_outlined, color: Colors.grey[800]),
               tooltip: 'Notifications',
               onPressed: () {
                 // Notifications screen logic here
@@ -252,6 +270,7 @@ class _HomePageState extends State<HomePage> {
             ),
           ],
         ),
+
         body: _pages[_selectedIndex],
         bottomNavigationBar: BottomNavigationBar(
           currentIndex: _selectedIndex,

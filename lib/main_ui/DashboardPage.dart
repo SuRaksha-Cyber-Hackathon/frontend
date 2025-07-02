@@ -4,17 +4,11 @@ import 'package:flutter/services.dart';
 
 import '../helpers/data_capture.dart';
 import '../helpers/data_store.dart';
-import '../login_screens/LoginPage.dart';
 
-import 'AddFundsPage.dart';
-import 'PayBillsPage.dart';
-import 'StatementsPage.dart';
-import 'TransferPage.dart';
 import 'widgets/account_summary.dart';
 import 'widgets/quick_actions.dart';
 import 'widgets/recent_transactions.dart';
 import 'widgets/spending_analytics.dart';
-import 'widgets/security_status.dart';
 
 class DashboardScreen extends StatefulWidget {
   final Function(int)? onNavigate;
@@ -90,7 +84,6 @@ class _DashboardScreenState extends State<DashboardScreen>
   @override
   void initState() {
     super.initState();
-    // Initialize and start the new slide and fade animation
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 800),
       vsync: this,

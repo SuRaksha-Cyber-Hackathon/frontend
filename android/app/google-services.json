@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "229626012516",
+    "project_id": "crazy-bankers-01928",
+    "storage_bucket": "crazy-bankers-01928.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:229626012516:android:28a5939c40117b40639071",
+        "android_client_info": {
+          "package_name": "com.example.crazy_bankers"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB7K1UMn-9pUbkcbpHEDBfs5U17fwAosJM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

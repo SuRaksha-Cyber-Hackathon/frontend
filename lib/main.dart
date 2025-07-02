@@ -1,23 +1,42 @@
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'controller/simple_ui_controller.dart';
 import 'device_id/DeviceIDManager.dart';
+import 'firebase_options.dart';
 import 'login_screens/RegisterPage.dart';
 import 'main_ui/HomePage.dart';
 import 'helpers/data_sender.dart';
 
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
 
   final uuid = await DeviceIDManager.getUUID();
   DataSenderService().initialize(uuid);
   DataSenderService().startForegroundSending();
 
   final prefs = await SharedPreferences.getInstance();
-  final isLoggedIn = prefs.getBool('isLoggedIn') ?? false;
-  final username = prefs.getString('username') ?? '';
+
+  final rememberMe = prefs.getBool('remember_me') ?? false;
+  final savedUsername = prefs.getString('username') ?? '';
+
+  // Firebase current user
+  final user = FirebaseAuth.instance.currentUser;
+
+  // Decide loggedIn state
+  final isLoggedIn = rememberMe && user != null;
+
+  // If logged in, get email from Firebase user or fallback to saved username
+  final username = isLoggedIn ? (user.email ?? savedUsername) : '';
 
   Get.put(SimpleUIController());
   runApp(MyApp(isLoggedIn: isLoggedIn, username: username));
@@ -33,6 +52,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GetMaterialApp(
+      navigatorKey: navigatorKey,
       debugShowCheckedModeBanner: false,
       home: isLoggedIn ? HomePage(username: username) : SignUpView(),
     );

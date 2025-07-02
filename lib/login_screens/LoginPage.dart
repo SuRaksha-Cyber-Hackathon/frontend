@@ -1,10 +1,10 @@
 import 'dart:async';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get/get.dart';
-import 'package:lottie/lottie.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../constants.dart';
@@ -32,10 +32,13 @@ class _LoginPageState extends State<LoginPage> {
   final FlutterSecureStorage secureStorage = FlutterSecureStorage();
   final _formKey = GlobalKey<FormState>();
 
+  bool _rememberMe = false;
+  bool _isLoading = false;
+
   @override
   void initState() {
     super.initState();
-
+    _loadRememberedEmail();
     if (widget.lockUntil != null) {
       _updateLockState();
       _lockTimer = Timer.periodic(Duration(seconds: 1), (_) {
@@ -44,10 +47,33 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-  Future<bool> validateLogin(String username, String password) async {
-    final savedUsername = await secureStorage.read(key: 'username');
-    final savedPassword = await secureStorage.read(key: 'password');
-    return username == savedUsername && password == savedPassword;
+  void _loadRememberedEmail() async {
+    final prefs = await SharedPreferences.getInstance();
+    final rememberedEmail = prefs.getString('remembered_email');
+    if (rememberedEmail != null) {
+      nameController.text = rememberedEmail;
+      setState(() {
+        _rememberMe = true;
+      });
+    }
+  }
+
+  Future<bool> firebaseLogin(String email, String password) async {
+    try {
+      await FirebaseAuth.instance.signInWithEmailAndPassword(
+        email: email.trim(),
+        password: password.trim(),
+      );
+      return true;
+    } on FirebaseAuthException catch (e) {
+      String msg = 'Login failed.';
+      if (e.code == 'user-not-found') msg = 'No user found with this email.';
+      else if (e.code == 'wrong-password') msg = 'Incorrect password.';
+      else if (e.code == 'invalid-email') msg = 'Invalid email format.';
+      if (!mounted) return false;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+      return false;
+    }
   }
 
   void _updateLockState() {
@@ -115,20 +141,61 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
+  void _showForgotPasswordDialog() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        String email = nameController.text.trim();
+        return AlertDialog(
+          title: Text("Reset Password"),
+          content: Text("Send reset link to $email?"),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text("Cancel"),
+            ),
+            TextButton(
+              onPressed: () async {
+                try {
+                  if(!mounted) return ;
+                  await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text("Password reset email sent")),
+                  );
+                } catch (e) {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text("Failed to send reset email")),
+                  );
+                }
+              },
+              child: Text("Send"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  bool _isValidEmail(String email) {
+    final emailRegex = RegExp(
+      r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$",
+    );
+    return emailRegex.hasMatch(email);
+  }
+
+
   Widget _buildLargeScreen(
       bool locked, Size size, SimpleUIController simpleUIController) {
     return Row(
       children: [
         Expanded(
           flex: 4,
-          child: RotatedBox(
-            quarterTurns: 3,
-            child: Lottie.asset(
-              'assets/coin.json',
-              height: size.height * 0.3,
-              width: double.infinity,
-              fit: BoxFit.fill,
-            ),
+          child: Container(
+            // Removed Lottie animation, replaced with empty container
+            height: size.height * 0.3,
+            width: double.infinity,
           ),
         ),
         SizedBox(width: size.width * 0.06),
@@ -151,17 +218,9 @@ class _LoginPageState extends State<LoginPage> {
       bool locked, Size size, SimpleUIController simpleUIController) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisAlignment:
-      size.width > 600 ? MainAxisAlignment.center : MainAxisAlignment.start,
+      mainAxisAlignment: MainAxisAlignment.center, // Always center vertically
       children: [
-        size.width > 600
-            ? Container()
-            : Lottie.asset(
-          'wave.json',
-          height: size.height * 0.2,
-          width: size.width,
-          fit: BoxFit.fill,
-        ),
+        // Removed Lottie animation from small screen
         SizedBox(height: size.height * 0.03),
         Padding(
           padding: const EdgeInsets.only(left: 20.0),
@@ -185,18 +244,16 @@ class _LoginPageState extends State<LoginPage> {
                   controller: nameController,
                   decoration: const InputDecoration(
                     prefixIcon: Icon(Icons.person),
-                    hintText: 'Username or Gmail',
+                    hintText: 'Email',
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.all(Radius.circular(15)),
                     ),
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Please enter username';
-                    } else if (value.length < 4) {
-                      return 'at least enter 4 characters';
-                    } else if (value.length > 13) {
-                      return 'maximum character is 13';
+                      return 'Please enter email';
+                    } else if (!_isValidEmail(value.trim())) {
+                      return 'Please enter a valid email';
                     }
                     return null;
                   },
@@ -227,21 +284,40 @@ class _LoginPageState extends State<LoginPage> {
                         borderRadius: BorderRadius.all(Radius.circular(15)),
                       ),
                     ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Please enter some text';
-                      } else if (value.length < 7) {
-                        return 'at least enter 6 characters';
-                      } else if (value.length > 13) {
-                        return 'maximum character is 13';
-                      }
-                      return null;
-                    },
-                  ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Please enter some text';
+                          } else if (value.length < 6) {
+                            return 'At least enter 6 characters';
+                          }
+                          return null;
+                        },
+                      ),
                 ),
                 SizedBox(height: size.height * 0.01),
-                SizedBox(height: size.height * 0.02),
-
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        Checkbox(
+                          value: _rememberMe,
+                          onChanged: (val) {
+                            setState(() {
+                              _rememberMe = val ?? false;
+                            });
+                          },
+                        ),
+                        Text("Remember Me"),
+                      ],
+                    ),
+                    TextButton(
+                      onPressed: _showForgotPasswordDialog,
+                      child: Text("Forgot Password?"),
+                    ),
+                  ],
+                ),
+                SizedBox(height: size.height * 0.01),
                 /// Login Button
                 loginButton(locked),
                 SizedBox(height: size.height * 0.03),
@@ -296,34 +372,32 @@ class _LoginPageState extends State<LoginPage> {
             ? null
             : () async {
           if (_formKey.currentState!.validate()) {
-            final username = nameController.text;
-            final password = passwordController.text;
-
-            final isValid = await validateLogin(username, password);
+            final email = nameController.text.trim();  // now used as email
+            final password = passwordController.text.trim();
+            final isValid = await firebaseLogin(email, password);
 
             if (!mounted) return;
-
             if (isValid) {
               final prefs = await SharedPreferences.getInstance();
               await prefs.setBool('isLoggedIn', true);
-              await prefs.setString('username', username);
+              await prefs.setString('username', email);
+              await prefs.setBool('remember_me', _rememberMe);
+              if (_rememberMe) {
+                await prefs.setString('username', email);
+              } else {
+                await prefs.remove('username');
+              }
 
-              if (!mounted) return;
+
+              if(!mounted) return ;
 
               Navigator.pushAndRemoveUntil(
                 context,
-                CupertinoPageRoute(
-                  builder: (ctx) => HomePage(username: username)),
+                CupertinoPageRoute(builder: (ctx) => HomePage(username: email)),
                     (route) => false,
               );
-            } else {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content:
-                  Text('Invalid credentials. Please try again.'),
-                ),
-              );
             }
+
           }
         },
         child: Text(
@@ -331,7 +405,7 @@ class _LoginPageState extends State<LoginPage> {
           style: const TextStyle(
             fontWeight: FontWeight.bold,
             fontSize: 18,
-            color: Colors.black,
+            color: Colors.white,
           ),
         ),
       ),

@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'package:dio/dio.dart';
+import 'package:flutter/material.dart';
+import '../main.dart';
 import 'data_store.dart';
 
 class DataSenderService {
@@ -9,11 +11,12 @@ class DataSenderService {
 
   Timer? _timer;
   final Dio _dio = Dio();
-  final String endpointUrl = 'https://0053f9a7-2c80-4361-bea3-022f5947ded2-00-2ul5vqqzvvafq.sisko.replit.dev/receive';
+  final String endpointUrl = 'https://zhmx7x9x-8000.inc1.devtunnels.ms/receive';
 
   String? _uuid;
 
-  /// Call this once with the assigned persistent UUID
+  String? get uuid => _uuid;
+
   void initialize(String uuid) {
     _uuid = uuid;
   }
@@ -48,7 +51,20 @@ class DataSenderService {
         if (response.statusCode == 200) {
           store.clear();
           print('✅ Foreground: Data sent and cleared');
-        } else {
+
+          final ctx = navigatorKey.currentContext;
+
+          if (ctx != null) {
+            ScaffoldMessenger.of(ctx).showSnackBar(
+              SnackBar(
+                content: Text("✅ Data sent successfully"),
+                backgroundColor: Colors.green[600],
+                duration: Duration(seconds: 2),
+              ),
+            );
+          }
+        }
+        else {
           print('❌ Foreground send failed: ${response.statusCode}');
         }
       } catch (e) {

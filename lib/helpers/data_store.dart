@@ -19,14 +19,16 @@ class CaptureStore {
   void addScroll(ScrollEvent e)    => _scrollEvents.add(e);
 
   Map<String, dynamic> toJson(String uuid) => {
-    uuid: {
+    'id': uuid,
+    'events': {
       'keypress_events': _keyEvents.map((e) => e.toMap()).toList(),
-      'swipe_events':    _swipeEvents.map((e) => e.toMap()).toList(),
-      'tap_events':      _tapEvents.map((e) => e.toMap()).toList(),
-      'sensor_events':   _sensorEvents.map((e) => e.toMap()).toList(),
-      'scroll_events':   _scrollEvents.map((e) => e.toMap()).toList(),
+      'swipe_events': _swipeEvents.map((e) => e.toMap()).toList(),
+      'tap_events': _tapEvents.map((e) => e.toMap()).toList(),
+      'sensor_events': _sensorEvents.map((e) => e.toMap()).toList(),
+      'scroll_events': _scrollEvents.map((e) => e.toMap()).toList(),
     }
   };
+
 
   /// Stringified version of above
   String toJsonString(String uuid) => jsonEncode(toJson(uuid));
