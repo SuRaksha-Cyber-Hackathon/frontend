@@ -11,14 +11,31 @@ class DataSenderService {
 
   Timer? _timer;
   final Dio _dio = Dio();
-  final String endpointUrl = 'https://zhmx7x9x-8000.inc1.devtunnels.ms/receive';
+  final String baseUrl = 'http://localhost:8000';
 
   String? _uuid;
+  bool _isEnrolled = false; // Track enrollment state
 
   String? get uuid => _uuid;
+  bool get isEnrolled => _isEnrolled;
 
-  void initialize(String uuid) {
+  void initialize(String uuid) async {
     _uuid = uuid;
+    await _checkEnrollmentStatus();
+  }
+
+  // Check with server if user embedding exists
+  Future<void> _checkEnrollmentStatus() async {
+    try {
+      final response = await _dio.get('$baseUrl/check_user/$_uuid');
+      if (response.statusCode == 200) {
+        _isEnrolled = response.data['exists'] ?? false;
+        print('Enrollment status for $_uuid: $_isEnrolled');
+      }
+    } catch (e) {
+      print('Error checking enrollment: $e');
+      _isEnrolled = false; // default to false if error
+    }
   }
 
   void startForegroundSending() {
@@ -30,7 +47,6 @@ class DataSenderService {
     _timer ??= Timer.periodic(Duration(seconds: 30), (_) async {
       final store = CaptureStore();
 
-      // Early exit if there's no data
       if (store.keyEvents.isEmpty &&
           store.swipeEvents.isEmpty &&
           store.tapEvents.isEmpty &&
@@ -41,34 +57,60 @@ class DataSenderService {
 
       final data = store.toJson(_uuid!);
 
+      final endpoint = _isEnrolled ? '/authenticate' : '/receive';
+      final url = '$baseUrl$endpoint';
+
       try {
         final response = await _dio.post(
-          endpointUrl,
+          url,
           data: data,
           options: Options(headers: {'Content-Type': 'application/json'}),
         );
 
+        print('🔁 Raw response: ${response.data}'); // <-- Debug print
+
         if (response.statusCode == 200) {
           store.clear();
-          print('✅ Foreground: Data sent and cleared');
+          print('✅ Data sent to $endpoint and cleared');
 
           final ctx = navigatorKey.currentContext;
+
+          String message = "✅ Data sent successfully ($endpoint)";
+          Color backgroundColor = Colors.green[600]!;
+
+          if (!_isEnrolled && endpoint == '/receive') {
+            _isEnrolled = true;
+            print('User is now enrolled.');
+          }
+
+          // ✅ Authentication result
+          if (endpoint == '/authenticate') {
+            final bool isAuth = response.data['auth'] ?? false;
+            final double score = response.data['score'] ?? -1.0;
+
+            if (!isAuth) {
+              message = "🚨 Anomaly Detected! Score: $score";
+              backgroundColor = Colors.red[600]!;
+            } else {
+              message = "✅ Authenticated. Score: $score";
+              backgroundColor = Colors.green[600]!;
+            }
+          }
 
           if (ctx != null) {
             ScaffoldMessenger.of(ctx).showSnackBar(
               SnackBar(
-                content: Text("✅ Data sent successfully"),
-                backgroundColor: Colors.green[600],
-                duration: Duration(seconds: 2),
+                content: Text(message),
+                backgroundColor: backgroundColor,
+                duration: Duration(seconds: 3),
               ),
             );
           }
-        }
-        else {
-          print('❌ Foreground send failed: ${response.statusCode}');
+        } else {
+          print('❌ Send to $endpoint failed: ${response.statusCode}');
         }
       } catch (e) {
-        print('❌ Foreground exception: $e');
+        print('❌ Exception sending to $endpoint: $e');
       }
     });
   }
