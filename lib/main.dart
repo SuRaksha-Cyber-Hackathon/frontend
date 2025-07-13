@@ -7,9 +7,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'controller/simple_ui_controller.dart';
 import 'device_id/DeviceIDManager.dart';
 import 'firebase_options.dart';
+import 'helpers/offline_data_sender.dart';
 import 'login_screens/RegisterPage.dart';
 import 'main_ui/HomePage.dart';
 import 'helpers/data_sender.dart';
+import 'models/SiameseModel.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
@@ -21,6 +23,15 @@ Future<void> main() async {
   );
 
   final uuid = await DeviceIDManager.getUUID();
+  // await UserEmbeddingStore().clearUserEmbeddings(uuid);
+  await SiameseModelService().loadModel();
+  await TapAuthenticationManager().loadScores();
+
+
+  TapAuthenticationManager().initializeForUser(uuid).then((_) {
+    print('TapAuthenticationManager initialized for user $uuid');
+  });
+
   DataSenderService().initialize(uuid);
   DataSenderService().startForegroundSending();
 

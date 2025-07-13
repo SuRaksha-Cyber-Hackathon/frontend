@@ -110,73 +110,83 @@ class _DashboardScreenState extends State<DashboardScreen>
 
   @override
   Widget build(BuildContext context) {
-    return RawKeyboardListener(
-        focusNode: _keyboardFocus,
-        autofocus: true,
-        onKey: (event) => DataCapture.handleKeyEvent(
-          event,
-          'dashboard',
-              (kp) => CaptureStore().addKey(kp),
-        ),
-        child: GestureDetector(
-          behavior: HitTestBehavior.translucent,
-          onPanStart: (details) => DataCapture.onSwipeStart(details),
-          onPanUpdate: (details) => DataCapture.onSwipeUpdate(details),
-          onPanEnd: (details) => DataCapture.onSwipeEnd(
-              details, 'dashboard', (sw) => CaptureStore().addSwipe(sw)),
-          onTapDown: (details) => DataCapture.onTapDown(details),
-          onTapUp: (details) => DataCapture.onTapUp(
-              details, 'dashboard', (tp) => CaptureStore().addTap(tp)),
-          child: Scaffold(
-            backgroundColor: Colors.grey[50],
-            body: AnimatedBuilder(
-              animation: _animationController,
-              builder: (context, child) {
-                return Opacity(
-                  opacity: _fadeAnimation.value,
-                  child: Transform.translate(
-                    offset: Offset(0, _slideAnimation.value),
-                    child: child,
-                  ),
-                );
-              },
-              child: NotificationListener<ScrollNotification>(
-                onNotification: (notification) {
-                  if (notification is ScrollStartNotification) {
-                    DataCapture.onScrollStart(notification);
-                  } else if (notification is ScrollUpdateNotification) {
-                    DataCapture.onScrollUpdate(notification);
-                  } else if (notification is ScrollEndNotification) {
-                    DataCapture.onScrollEnd(notification, 'dashboard',
-                            (se) => CaptureStore().addScroll(se));
-                  }
-                  return true;
+    return Listener(
+      behavior: HitTestBehavior.translucent,
+      onPointerDown: (event) =>
+          DataCapture.onRawTouchDown(event),
+      onPointerUp: (event) => DataCapture.onRawTouchUp(
+        event,
+        'dashboard',
+            (te) => CaptureStore().addTap(te),
+      ),
+      child: RawKeyboardListener(
+          focusNode: _keyboardFocus,
+          autofocus: true,
+          onKey: (event) => DataCapture.handleKeyEvent(
+            event,
+            'dashboard',
+                (kp) => CaptureStore().addKey(kp),
+          ),
+          child: GestureDetector(
+            behavior: HitTestBehavior.translucent,
+            onPanStart: (details) => DataCapture.onSwipeStart(details),
+            onPanUpdate: (details) => DataCapture.onSwipeUpdate(details),
+            onPanEnd: (details) => DataCapture.onSwipeEnd(
+                details, 'dashboard', (sw) => CaptureStore().addSwipe(sw)),
+            onTapDown: (details) => DataCapture.onTapDown(details),
+            onTapUp: (details) => DataCapture.onTapUp(
+                details, 'dashboard', (tp) => CaptureStore().addTap(tp)),
+            child: Scaffold(
+              backgroundColor: Colors.grey[50],
+              body: AnimatedBuilder(
+                animation: _animationController,
+                builder: (context, child) {
+                  return Opacity(
+                    opacity: _fadeAnimation.value,
+                    child: Transform.translate(
+                      offset: Offset(0, _slideAnimation.value),
+                      child: child,
+                    ),
+                  );
                 },
-                child: SingleChildScrollView(
-                  padding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      SizedBox(height: 16),
-                      AccountSummarySection(
-                        accounts: _accounts,
-                      ),
-                      const SizedBox(height: 24),
-                      QuickActionsSection(onActionTap: _navigateToPage),
-                      const SizedBox(height: 24),
-                      RecentTransactionsSection(
-                          transactions: _recentTransactions),
-                      const SizedBox(height: 24),
-                      SpendingAnalyticsSection(
-                          monthlySpending: _monthlySpending),
-                    ],
+                child: NotificationListener<ScrollNotification>(
+                  onNotification: (notification) {
+                    if (notification is ScrollStartNotification) {
+                      DataCapture.onScrollStart(notification);
+                    } else if (notification is ScrollUpdateNotification) {
+                      DataCapture.onScrollUpdate(notification);
+                    } else if (notification is ScrollEndNotification) {
+                      DataCapture.onScrollEnd(notification, 'dashboard',
+                              (se) => CaptureStore().addScroll(se));
+                    }
+                    return true;
+                  },
+                  child: SingleChildScrollView(
+                    padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SizedBox(height: 16),
+                        AccountSummarySection(
+                          accounts: _accounts,
+                        ),
+                        const SizedBox(height: 24),
+                        QuickActionsSection(onActionTap: _navigateToPage),
+                        const SizedBox(height: 24),
+                        RecentTransactionsSection(
+                            transactions: _recentTransactions),
+                        const SizedBox(height: 24),
+                        SpendingAnalyticsSection(
+                            monthlySpending: _monthlySpending),
+                      ],
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
-        )
+          )
+      ),
     );
   }
 

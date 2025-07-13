@@ -207,101 +207,111 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    return RawKeyboardListener(
-      focusNode: _keyboardFocus,
-      onKey: (event) =>
-          DataCapture.handleKeyEvent(
-            event,
-            'home',
-                (kp) => CaptureStore().addKey(kp),
-          ),
-      child: Scaffold(
-        drawer: const ProfileSidebar(),
-        appBar: AppBar(
-          backgroundColor: Colors.white,
-          elevation: 0,
-          automaticallyImplyLeading: false, // disables default hamburger icon
+    return Listener(
+      behavior: HitTestBehavior.translucent,
+      onPointerDown: (event) =>
+          DataCapture.onRawTouchDown(event),
+      onPointerUp: (event) => DataCapture.onRawTouchUp(
+        event,
+        'home',
+            (te) => CaptureStore().addTap(te),
+      ),
+      child: RawKeyboardListener(
+        focusNode: _keyboardFocus,
+        onKey: (event) =>
+            DataCapture.handleKeyEvent(
+              event,
+              'home',
+                  (kp) => CaptureStore().addKey(kp),
+            ),
+        child: Scaffold(
+          drawer: const ProfileSidebar(),
+          appBar: AppBar(
+            backgroundColor: Colors.white,
+            elevation: 0,
+            automaticallyImplyLeading: false, // disables default hamburger icon
 
-          leading: Builder(
-            builder: (context) {
-              return IconButton(
-                padding: EdgeInsets.all(0),
-                iconSize: 40,
-                icon: CircleAvatar(
-                  backgroundColor: Colors.indigo[100],
-                  radius: 20,
-                  child: Icon(Icons.person, color: Colors.indigo),
-                ),
+            leading: Builder(
+              builder: (context) {
+                return IconButton(
+                  padding: EdgeInsets.all(0),
+                  iconSize: 40,
+                  icon: CircleAvatar(
+                    backgroundColor: Colors.indigo[100],
+                    radius: 20,
+                    child: Icon(Icons.person, color: Colors.indigo),
+                  ),
+                  onPressed: () {
+                    Scaffold.of(context).openDrawer();
+                  },
+                  tooltip: 'Open Profile Sidebar',
+                );
+              },
+            ),
+
+            title: Row(
+              children: [
+              ],
+            ),
+
+            actions: [
+              IconButton(
+                icon: Icon(Icons.notifications_none_outlined, color: Colors.grey[800]),
+                tooltip: 'Notifications',
                 onPressed: () {
-                  Scaffold.of(context).openDrawer();
+                  // Notifications screen logic here
                 },
-                tooltip: 'Open Profile Sidebar',
-              );
-            },
-          ),
-
-          title: Row(
-            children: [
+              ),
+              SizedBox(width: 4),
+              InkWell(
+                onTap: _simulateAnomalyChange,
+                borderRadius: BorderRadius.circular(30),
+                child: Container(
+                  padding: EdgeInsets.all(6),
+                  margin: EdgeInsets.only(right: 12),
+                  decoration: BoxDecoration(
+                    color: _indicatorColor().withOpacity(0.1),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: _indicatorColor(), width: 1),
+                  ),
+                  child: Icon(Icons.shield, color: _indicatorColor(), size: 18),
+                ),
+              ),
             ],
           ),
 
-          actions: [
-            IconButton(
-              icon: Icon(Icons.notifications_none_outlined, color: Colors.grey[800]),
-              tooltip: 'Notifications',
-              onPressed: () {
-                // Notifications screen logic here
-              },
-            ),
-            SizedBox(width: 4),
-            InkWell(
-              onTap: _simulateAnomalyChange,
-              borderRadius: BorderRadius.circular(30),
-              child: Container(
-                padding: EdgeInsets.all(6),
-                margin: EdgeInsets.only(right: 12),
-                decoration: BoxDecoration(
-                  color: _indicatorColor().withOpacity(0.1),
-                  shape: BoxShape.circle,
-                  border: Border.all(color: _indicatorColor(), width: 1),
-                ),
-                child: Icon(Icons.shield, color: _indicatorColor(), size: 18),
+          body: _pages[_selectedIndex],
+          bottomNavigationBar: BottomNavigationBar(
+            currentIndex: _selectedIndex,
+            onTap: _onItemTapped,
+            type: BottomNavigationBarType.fixed,
+            backgroundColor: Colors.white,
+            selectedItemColor: Colors.indigo[800],
+            unselectedItemColor: Colors.grey[600],
+            showUnselectedLabels: true,
+            items: const [
+              BottomNavigationBarItem(
+                icon: Icon(Icons.dashboard),
+                label: 'Dashboard',
               ),
-            ),
-          ],
-        ),
-
-        body: _pages[_selectedIndex],
-        bottomNavigationBar: BottomNavigationBar(
-          currentIndex: _selectedIndex,
-          onTap: _onItemTapped,
-          type: BottomNavigationBarType.fixed,
-          backgroundColor: Colors.white,
-          selectedItemColor: Colors.indigo[800],
-          unselectedItemColor: Colors.grey[600],
-          showUnselectedLabels: true,
-          items: const [
-            BottomNavigationBarItem(
-              icon: Icon(Icons.dashboard),
-              label: 'Dashboard',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.send),
-              label: 'Transfer',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.swap_horiz),
-              label: 'Add Funds',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.account_balance),
-              label: 'Pay Bills',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.person),
-              label: 'Transactions',
-            ),
-          ],
+              BottomNavigationBarItem(
+                icon: Icon(Icons.send),
+                label: 'Transfer',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.swap_horiz),
+                label: 'Add Funds',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.account_balance),
+                label: 'Pay Bills',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.person),
+                label: 'Transactions',
+              ),
+            ],
+          ),
         ),
       ),
     );

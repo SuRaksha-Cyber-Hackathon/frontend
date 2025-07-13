@@ -103,242 +103,314 @@ class _PayBillsPageState extends State<PayBillsPage>
   @override
   Widget build(BuildContext context) {
     final primaryColor = Colors.indigo.shade900;
-    return RawKeyboardListener(
-      focusNode: _keyboardFocus,
-      onKey: (event) => DataCapture.handleKeyEvent(
+    return Listener(
+      behavior: HitTestBehavior.translucent,
+      onPointerDown: (event) =>
+          DataCapture.onRawTouchDown(event),
+      onPointerUp: (event) => DataCapture.onRawTouchUp(
         event,
         'pay_bills',
-            (kp) => CaptureStore().addKey(kp),
+            (te) => CaptureStore().addTap(te),
       ),
-      child: GestureDetector(
-        onPanStart: (details) => DataCapture.onSwipeStart(details),
-        onPanUpdate: (details) => DataCapture.onSwipeUpdate(details),
-        onPanEnd: (details) => DataCapture.onSwipeEnd(
-          details,
+      child: RawKeyboardListener(
+        focusNode: _keyboardFocus,
+        onKey: (event) => DataCapture.handleKeyEvent(
+          event,
           'pay_bills',
-              (sw) => CaptureStore().addSwipe(sw),
+              (kp) => CaptureStore().addKey(kp),
         ),
-        onTapDown: (details) => DataCapture.onTapDown(details),
-        onTapUp: (details) => DataCapture.onTapUp(
-          details,
-          'pay_bills',
-              (te) => CaptureStore().addTap(te),
-        ),
-        child: Scaffold(
-          backgroundColor: Colors.white,
-          body: SafeArea(
-            child: AnimatedBuilder(
-              animation: _animationController,
-              builder: (context, child) => Transform.translate(
-                offset: Offset(0, _slideAnimation.value),
-                child: Opacity(
-                  opacity: _fadeAnimation.value,
-                  child: NotificationListener<ScrollNotification>(
-                    onNotification: (notification) {
-                      if (notification is ScrollStartNotification) {
-                        DataCapture.onScrollStart(notification);
-                      } else if (notification is ScrollUpdateNotification) {
-                        DataCapture.onScrollUpdate(notification);
-                      } else if (notification is ScrollEndNotification) {
-                        DataCapture.onScrollEnd(
-                          notification,
-                          'pay_bills',
-                              (se) => CaptureStore().addScroll(se),
-                        );
-                      }
-                      return true;
-                    },
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.all(24),
-                      child: Form(
-                        key: _formKey,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Header section
-                            Row(
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.all(12),
+        child: GestureDetector(
+          onPanStart: (details) => DataCapture.onSwipeStart(details),
+          onPanUpdate: (details) => DataCapture.onSwipeUpdate(details),
+          onPanEnd: (details) => DataCapture.onSwipeEnd(
+            details,
+            'pay_bills',
+                (sw) => CaptureStore().addSwipe(sw),
+          ),
+          onTapDown: (details) => DataCapture.onTapDown(details),
+          onTapUp: (details) => DataCapture.onTapUp(
+            details,
+            'pay_bills',
+                (te) => CaptureStore().addTap(te),
+          ),
+          child: Scaffold(
+            backgroundColor: Colors.white,
+            body: SafeArea(
+              child: AnimatedBuilder(
+                animation: _animationController,
+                builder: (context, child) => Transform.translate(
+                  offset: Offset(0, _slideAnimation.value),
+                  child: Opacity(
+                    opacity: _fadeAnimation.value,
+                    child: NotificationListener<ScrollNotification>(
+                      onNotification: (notification) {
+                        if (notification is ScrollStartNotification) {
+                          DataCapture.onScrollStart(notification);
+                        } else if (notification is ScrollUpdateNotification) {
+                          DataCapture.onScrollUpdate(notification);
+                        } else if (notification is ScrollEndNotification) {
+                          DataCapture.onScrollEnd(
+                            notification,
+                            'pay_bills',
+                                (se) => CaptureStore().addScroll(se),
+                          );
+                        }
+                        return true;
+                      },
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.all(24),
+                        child: Form(
+                          key: _formKey,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Header section
+                              Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(12),
+                                    decoration: BoxDecoration(
+                                      color: Colors.indigo.shade50,
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(
+                                        color: Colors.indigo.shade100,
+                                        width: 1,
+                                      ),
+                                    ),
+                                    child: Icon(
+                                      Icons.receipt_long_rounded,
+                                      color: primaryColor,
+                                      size: 28,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          'Bill Payments',
+                                          style: TextStyle(
+                                            fontSize: 24,
+                                            fontWeight: FontWeight.w700,
+                                            color: primaryColor,
+                                            letterSpacing: -0.5,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          'Pay utility bills quickly and securely',
+                                          style: TextStyle(
+                                            fontSize: 15,
+                                            color: Colors.grey.shade600,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 36),
+
+                              // Bill type selector
+                              _buildSection(
+                                title: 'Select Bill Type',
+                                subtitle: 'Choose the utility service',
+                                child: Column(
+                                  children: [
+                                    const SizedBox(height: 16),
+                                    SizedBox(
+                                      height: 140,
+                                      child: ListView.builder(
+                                        scrollDirection: Axis.horizontal,
+                                        itemCount: _billTypes.length,
+                                        itemBuilder: (context, index) {
+                                          final billType = _billTypes.keys.elementAt(index);
+                                          final billData = _billTypes[billType]!;
+                                          final isSelected = _selectedBillType == billType;
+
+                                          return Container(
+                                            width: 110,
+                                            margin: const EdgeInsets.only(right: 12),
+                                            child: Material(
+                                              color: Colors.transparent,
+                                              child: InkWell(
+                                                onTap: () {
+                                                  setState(() {
+                                                    _selectedBillType = billType;
+                                                    _selectedProvider = billData['providers'][0];
+                                                  });
+                                                  HapticFeedback.selectionClick();
+                                                },
+                                                borderRadius: BorderRadius.circular(16),
+                                                child: Container(
+                                                  padding: const EdgeInsets.all(16),
+                                                  decoration: BoxDecoration(
+                                                    color: isSelected
+                                                        ? Colors.indigo.shade50
+                                                        : Colors.grey.shade50,
+                                                    border: Border.all(
+                                                      color: isSelected
+                                                          ? primaryColor
+                                                          : Colors.grey.shade200,
+                                                      width: isSelected ? 2 : 1,
+                                                    ),
+                                                    borderRadius: BorderRadius.circular(16),
+                                                  ),
+                                                  child: Column(
+                                                    mainAxisAlignment: MainAxisAlignment.center,
+                                                    children: [
+                                                      Container(
+                                                        padding: const EdgeInsets.all(12),
+                                                        decoration: BoxDecoration(
+                                                          color: isSelected
+                                                              ? primaryColor
+                                                              : Colors.grey.shade300,
+                                                          borderRadius: BorderRadius.circular(12),
+                                                        ),
+                                                        child: Icon(
+                                                          billData['icon'],
+                                                          size: 28,
+                                                          color: isSelected
+                                                              ? Colors.white
+                                                              : Colors.grey.shade600,
+                                                        ),
+                                                      ),
+                                                      const SizedBox(height: 12),
+                                                      Text(
+                                                        billType,
+                                                        style: TextStyle(
+                                                          fontSize: 13,
+                                                          fontWeight: FontWeight.w600,
+                                                          color: isSelected
+                                                              ? primaryColor
+                                                              : Colors.grey.shade700,
+                                                        ),
+                                                        textAlign: TextAlign.center,
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 32),
+
+                              // Payment account section
+                              _buildSection(
+                                title: 'Payment Account',
+                                subtitle: 'Select account to debit from',
+                                child: Container(
+                                  margin: const EdgeInsets.only(top: 16),
+                                  padding: const EdgeInsets.all(20),
                                   decoration: BoxDecoration(
                                     color: Colors.indigo.shade50,
-                                    borderRadius: BorderRadius.circular(12),
+                                    borderRadius: BorderRadius.circular(16),
                                     border: Border.all(
                                       color: Colors.indigo.shade100,
                                       width: 1,
                                     ),
                                   ),
-                                  child: Icon(
-                                    Icons.receipt_long_rounded,
-                                    color: primaryColor,
-                                    size: 28,
-                                  ),
-                                ),
-                                const SizedBox(width: 16),
-                                Expanded(
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      Text(
-                                        'Bill Payments',
-                                        style: TextStyle(
-                                          fontSize: 24,
-                                          fontWeight: FontWeight.w700,
-                                          color: primaryColor,
-                                          letterSpacing: -0.5,
-                                        ),
+                                      Row(
+                                        children: [
+                                          Icon(
+                                            Icons.account_balance_rounded,
+                                            color: primaryColor,
+                                            size: 24,
+                                          ),
+                                          const SizedBox(width: 12),
+                                          Text(
+                                            'Debit From',
+                                            style: TextStyle(
+                                              color: primaryColor,
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                        ],
                                       ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        'Pay utility bills quickly and securely',
+                                      const SizedBox(height: 16),
+                                      DropdownButtonFormField<String>(
+                                        value: _selectedAccount,
+                                        decoration: InputDecoration(
+                                          filled: true,
+                                          fillColor: Colors.white,
+                                          border: OutlineInputBorder(
+                                            borderRadius: BorderRadius.circular(12),
+                                            borderSide: BorderSide.none,
+                                          ),
+                                          contentPadding: const EdgeInsets.symmetric(
+                                            horizontal: 16,
+                                            vertical: 18,
+                                          ),
+                                        ),
+                                        dropdownColor: Colors.white,
                                         style: TextStyle(
-                                          fontSize: 15,
-                                          color: Colors.grey.shade600,
-                                          fontWeight: FontWeight.w500,
+                                          color: primaryColor,
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                        items: [
+                                          'Savings Account - ****1234',
+                                          'Current Account - ****5678',
+                                        ]
+                                            .map((account) => DropdownMenuItem(
+                                          value: account,
+                                          child: Text(account),
+                                        ))
+                                            .toList(),
+                                        onChanged: (value) => setState(() => _selectedAccount = value!),
+                                        icon: Icon(
+                                          Icons.keyboard_arrow_down_rounded,
+                                          color: primaryColor,
                                         ),
                                       ),
                                     ],
                                   ),
                                 ),
-                              ],
-                            ),
-                            const SizedBox(height: 36),
-
-                            // Bill type selector
-                            _buildSection(
-                              title: 'Select Bill Type',
-                              subtitle: 'Choose the utility service',
-                              child: Column(
-                                children: [
-                                  const SizedBox(height: 16),
-                                  SizedBox(
-                                    height: 140,
-                                    child: ListView.builder(
-                                      scrollDirection: Axis.horizontal,
-                                      itemCount: _billTypes.length,
-                                      itemBuilder: (context, index) {
-                                        final billType = _billTypes.keys.elementAt(index);
-                                        final billData = _billTypes[billType]!;
-                                        final isSelected = _selectedBillType == billType;
-
-                                        return Container(
-                                          width: 110,
-                                          margin: const EdgeInsets.only(right: 12),
-                                          child: Material(
-                                            color: Colors.transparent,
-                                            child: InkWell(
-                                              onTap: () {
-                                                setState(() {
-                                                  _selectedBillType = billType;
-                                                  _selectedProvider = billData['providers'][0];
-                                                });
-                                                HapticFeedback.selectionClick();
-                                              },
-                                              borderRadius: BorderRadius.circular(16),
-                                              child: Container(
-                                                padding: const EdgeInsets.all(16),
-                                                decoration: BoxDecoration(
-                                                  color: isSelected
-                                                      ? Colors.indigo.shade50
-                                                      : Colors.grey.shade50,
-                                                  border: Border.all(
-                                                    color: isSelected
-                                                        ? primaryColor
-                                                        : Colors.grey.shade200,
-                                                    width: isSelected ? 2 : 1,
-                                                  ),
-                                                  borderRadius: BorderRadius.circular(16),
-                                                ),
-                                                child: Column(
-                                                  mainAxisAlignment: MainAxisAlignment.center,
-                                                  children: [
-                                                    Container(
-                                                      padding: const EdgeInsets.all(12),
-                                                      decoration: BoxDecoration(
-                                                        color: isSelected
-                                                            ? primaryColor
-                                                            : Colors.grey.shade300,
-                                                        borderRadius: BorderRadius.circular(12),
-                                                      ),
-                                                      child: Icon(
-                                                        billData['icon'],
-                                                        size: 28,
-                                                        color: isSelected
-                                                            ? Colors.white
-                                                            : Colors.grey.shade600,
-                                                      ),
-                                                    ),
-                                                    const SizedBox(height: 12),
-                                                    Text(
-                                                      billType,
-                                                      style: TextStyle(
-                                                        fontSize: 13,
-                                                        fontWeight: FontWeight.w600,
-                                                        color: isSelected
-                                                            ? primaryColor
-                                                            : Colors.grey.shade700,
-                                                      ),
-                                                      textAlign: TextAlign.center,
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                        );
-                                      },
-                                    ),
-                                  ),
-                                ],
                               ),
-                            ),
-                            const SizedBox(height: 32),
+                              const SizedBox(height: 32),
 
-                            // Payment account section
-                            _buildSection(
-                              title: 'Payment Account',
-                              subtitle: 'Select account to debit from',
-                              child: Container(
-                                margin: const EdgeInsets.only(top: 16),
-                                padding: const EdgeInsets.all(20),
-                                decoration: BoxDecoration(
-                                  color: Colors.indigo.shade50,
-                                  borderRadius: BorderRadius.circular(16),
-                                  border: Border.all(
-                                    color: Colors.indigo.shade100,
-                                    width: 1,
-                                  ),
-                                ),
+                              // Bill details form
+                              _buildSection(
+                                title: '${_selectedBillType} Bill Details',
+                                subtitle: _billTypes[_selectedBillType]!['description'],
                                 child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Row(
-                                      children: [
-                                        Icon(
-                                          Icons.account_balance_rounded,
-                                          color: primaryColor,
-                                          size: 24,
-                                        ),
-                                        const SizedBox(width: 12),
-                                        Text(
-                                          'Debit From',
-                                          style: TextStyle(
-                                            color: primaryColor,
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 16),
+                                    const SizedBox(height: 20),
+
+                                    // Service Provider
                                     DropdownButtonFormField<String>(
-                                      value: _selectedAccount,
+                                      value: _selectedProvider,
                                       decoration: InputDecoration(
+                                        labelText: 'Service Provider',
                                         filled: true,
-                                        fillColor: Colors.white,
+                                        fillColor: Colors.grey.shade50,
                                         border: OutlineInputBorder(
                                           borderRadius: BorderRadius.circular(12),
-                                          borderSide: BorderSide.none,
+                                          borderSide: BorderSide(color: Colors.grey.shade300),
+                                        ),
+                                        enabledBorder: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(12),
+                                          borderSide: BorderSide(color: Colors.grey.shade300),
+                                        ),
+                                        focusedBorder: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(12),
+                                          borderSide: BorderSide(color: primaryColor, width: 2),
+                                        ),
+                                        prefixIcon: Icon(
+                                          Icons.business_rounded,
+                                          color: primaryColor,
                                         ),
                                         contentPadding: const EdgeInsets.symmetric(
                                           horizontal: 16,
@@ -351,321 +423,259 @@ class _PayBillsPageState extends State<PayBillsPage>
                                         fontSize: 16,
                                         fontWeight: FontWeight.w600,
                                       ),
-                                      items: [
-                                        'Savings Account - ****1234',
-                                        'Current Account - ****5678',
-                                      ]
-                                          .map((account) => DropdownMenuItem(
-                                        value: account,
-                                        child: Text(account),
+                                      items: (_billTypes[_selectedBillType]!['providers'] as List<String>)
+                                          .map((provider) => DropdownMenuItem(
+                                        value: provider,
+                                        child: Text(provider),
                                       ))
                                           .toList(),
-                                      onChanged: (value) => setState(() => _selectedAccount = value!),
+                                      onChanged: (value) => setState(() => _selectedProvider = value!),
                                       icon: Icon(
                                         Icons.keyboard_arrow_down_rounded,
                                         color: primaryColor,
                                       ),
                                     ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 32),
+                                    const SizedBox(height: 20),
 
-                            // Bill details form
-                            _buildSection(
-                              title: '${_selectedBillType} Bill Details',
-                              subtitle: _billTypes[_selectedBillType]!['description'],
-                              child: Column(
-                                children: [
-                                  const SizedBox(height: 20),
-
-                                  // Service Provider
-                                  DropdownButtonFormField<String>(
-                                    value: _selectedProvider,
-                                    decoration: InputDecoration(
-                                      labelText: 'Service Provider',
-                                      filled: true,
-                                      fillColor: Colors.grey.shade50,
-                                      border: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                        borderSide: BorderSide(color: Colors.grey.shade300),
-                                      ),
-                                      enabledBorder: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                        borderSide: BorderSide(color: Colors.grey.shade300),
-                                      ),
-                                      focusedBorder: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                        borderSide: BorderSide(color: primaryColor, width: 2),
-                                      ),
-                                      prefixIcon: Icon(
-                                        Icons.business_rounded,
-                                        color: primaryColor,
-                                      ),
-                                      contentPadding: const EdgeInsets.symmetric(
-                                        horizontal: 16,
-                                        vertical: 18,
-                                      ),
-                                    ),
-                                    dropdownColor: Colors.white,
-                                    style: TextStyle(
-                                      color: primaryColor,
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                    items: (_billTypes[_selectedBillType]!['providers'] as List<String>)
-                                        .map((provider) => DropdownMenuItem(
-                                      value: provider,
-                                      child: Text(provider),
-                                    ))
-                                        .toList(),
-                                    onChanged: (value) => setState(() => _selectedProvider = value!),
-                                    icon: Icon(
-                                      Icons.keyboard_arrow_down_rounded,
-                                      color: primaryColor,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 20),
-
-                                  // Bill Number / Customer ID
-                                  TextFormField(
-                                    controller: _billNumberController,
-                                    decoration: InputDecoration(
-                                      labelText: _billTypes[_selectedBillType]!['numberLabel'],
-                                      hintText: 'Enter ${_billTypes[_selectedBillType]!['numberLabel'].toLowerCase()}',
-                                      filled: true,
-                                      fillColor: Colors.grey.shade50,
-                                      border: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                        borderSide: BorderSide(color: Colors.grey.shade300),
-                                      ),
-                                      enabledBorder: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                        borderSide: BorderSide(color: Colors.grey.shade300),
-                                      ),
-                                      focusedBorder: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                        borderSide: BorderSide(color: primaryColor, width: 2),
-                                      ),
-                                      prefixIcon: Icon(
-                                        _selectedBillType == 'Mobile'
-                                            ? Icons.phone_rounded
-                                            : Icons.numbers_rounded,
-                                        color: primaryColor,
-                                      ),
-                                      contentPadding: const EdgeInsets.symmetric(
-                                        horizontal: 16,
-                                        vertical: 20,
-                                      ),
-                                    ),
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 16,
-                                      color: primaryColor,
-                                    ),
-                                    keyboardType: TextInputType.number,
-                                    inputFormatters: [
-                                      FilteringTextInputFormatter.digitsOnly,
-                                      LengthLimitingTextInputFormatter(
-                                        _selectedBillType == 'Mobile' ? 10 : 15,
-                                      ),
-                                    ],
-                                    validator: (value) {
-                                      if (value?.isEmpty == true) {
-                                        return 'This field is required';
-                                      }
-                                      if (_selectedBillType == 'Mobile' && value!.length != 10) {
-                                        return 'Mobile number must be 10 digits';
-                                      }
-                                      return null;
-                                    },
-                                  ),
-                                  const SizedBox(height: 20),
-
-                                  // Amount
-                                  TextFormField(
-                                    controller: _amountController,
-                                    decoration: InputDecoration(
-                                      labelText: 'Bill Amount',
-                                      hintText: 'Enter amount to pay',
-                                      filled: true,
-                                      fillColor: Colors.grey.shade50,
-                                      border: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                        borderSide: BorderSide(color: Colors.grey.shade300),
-                                      ),
-                                      enabledBorder: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                        borderSide: BorderSide(color: Colors.grey.shade300),
-                                      ),
-                                      focusedBorder: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                        borderSide: BorderSide(color: primaryColor, width: 2),
-                                      ),
-                                      prefixIcon: Icon(
-                                        Icons.currency_rupee_rounded,
-                                        color: primaryColor,
-                                      ),
-                                      suffixText: 'INR',
-                                      suffixStyle: TextStyle(
-                                        color: Colors.grey.shade600,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                      contentPadding: const EdgeInsets.symmetric(
-                                        horizontal: 16,
-                                        vertical: 20,
-                                      ),
-                                    ),
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 18,
-                                      color: primaryColor,
-                                    ),
-                                    keyboardType: TextInputType.number,
-                                    inputFormatters: [
-                                      FilteringTextInputFormatter.digitsOnly,
-                                      LengthLimitingTextInputFormatter(7),
-                                    ],
-                                    validator: (value) {
-                                      if (value?.isEmpty == true) {
-                                        return 'Amount is required';
-                                      }
-                                      final amount = double.tryParse(value!);
-                                      if (amount == null || amount <= 0) {
-                                        return 'Enter a valid amount';
-                                      }
-                                      if (amount < 10) {
-                                        return 'Minimum amount is ₹10';
-                                      }
-                                      if (amount > 50000) {
-                                        return 'Maximum amount is ₹50,000';
-                                      }
-                                      return null;
-                                    },
-                                  ),
-                                  const SizedBox(height: 20),
-
-                                  // Info container
-                                  Container(
-                                    padding: const EdgeInsets.all(16),
-                                    decoration: BoxDecoration(
-                                      color: Colors.blue.shade50,
-                                      borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(color: Colors.blue.shade100),
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        Icon(
-                                          Icons.info_outline_rounded,
-                                          color: Colors.blue.shade700,
-                                          size: 20,
+                                    // Bill Number / Customer ID
+                                    TextFormField(
+                                      controller: _billNumberController,
+                                      decoration: InputDecoration(
+                                        labelText: _billTypes[_selectedBillType]!['numberLabel'],
+                                        hintText: 'Enter ${_billTypes[_selectedBillType]!['numberLabel'].toLowerCase()}',
+                                        filled: true,
+                                        fillColor: Colors.grey.shade50,
+                                        border: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(12),
+                                          borderSide: BorderSide(color: Colors.grey.shade300),
                                         ),
-                                        const SizedBox(width: 12),
-                                        Expanded(
-                                          child: Text(
-                                            'Your ${_selectedBillType.toLowerCase()} bill will be processed instantly and confirmation will be sent via SMS.',
-                                            style: TextStyle(
-                                              fontSize: 13,
-                                              color: Colors.blue.shade700,
-                                              fontWeight: FontWeight.w500,
-                                            ),
-                                          ),
+                                        enabledBorder: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(12),
+                                          borderSide: BorderSide(color: Colors.grey.shade300),
+                                        ),
+                                        focusedBorder: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(12),
+                                          borderSide: BorderSide(color: primaryColor, width: 2),
+                                        ),
+                                        prefixIcon: Icon(
+                                          _selectedBillType == 'Mobile'
+                                              ? Icons.phone_rounded
+                                              : Icons.numbers_rounded,
+                                          color: primaryColor,
+                                        ),
+                                        contentPadding: const EdgeInsets.symmetric(
+                                          horizontal: 16,
+                                          vertical: 20,
+                                        ),
+                                      ),
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 16,
+                                        color: primaryColor,
+                                      ),
+                                      keyboardType: TextInputType.number,
+                                      inputFormatters: [
+                                        FilteringTextInputFormatter.digitsOnly,
+                                        LengthLimitingTextInputFormatter(
+                                          _selectedBillType == 'Mobile' ? 10 : 15,
                                         ),
                                       ],
+                                      validator: (value) {
+                                        if (value?.isEmpty == true) {
+                                          return 'This field is required';
+                                        }
+                                        if (_selectedBillType == 'Mobile' && value!.length != 10) {
+                                          return 'Mobile number must be 10 digits';
+                                        }
+                                        return null;
+                                      },
                                     ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(height: 40),
+                                    const SizedBox(height: 20),
 
-                            // Pay button
-                            SizedBox(
-                              width: double.infinity,
-                              child: ElevatedButton(
-                                onPressed: _isProcessing ? null : _processBillPayment,
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: primaryColor,
-                                  foregroundColor: Colors.white,
-                                  padding: const EdgeInsets.symmetric(vertical: 18),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(14),
-                                  ),
-                                  elevation: 0,
-                                  disabledBackgroundColor: Colors.grey.shade300,
-                                ),
-                                child: _isProcessing
-                                    ? Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    const SizedBox(
-                                      width: 24,
-                                      height: 24,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2.5,
-                                        color: Colors.white,
+                                    // Amount
+                                    TextFormField(
+                                      controller: _amountController,
+                                      decoration: InputDecoration(
+                                        labelText: 'Bill Amount',
+                                        hintText: 'Enter amount to pay',
+                                        filled: true,
+                                        fillColor: Colors.grey.shade50,
+                                        border: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(12),
+                                          borderSide: BorderSide(color: Colors.grey.shade300),
+                                        ),
+                                        enabledBorder: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(12),
+                                          borderSide: BorderSide(color: Colors.grey.shade300),
+                                        ),
+                                        focusedBorder: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(12),
+                                          borderSide: BorderSide(color: primaryColor, width: 2),
+                                        ),
+                                        prefixIcon: Icon(
+                                          Icons.currency_rupee_rounded,
+                                          color: primaryColor,
+                                        ),
+                                        suffixText: 'INR',
+                                        suffixStyle: TextStyle(
+                                          color: Colors.grey.shade600,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                        contentPadding: const EdgeInsets.symmetric(
+                                          horizontal: 16,
+                                          vertical: 20,
+                                        ),
                                       ),
-                                    ),
-                                    const SizedBox(width: 16),
-                                    const Text(
-                                      'Processing Payment...',
                                       style: TextStyle(
-                                        fontSize: 16,
                                         fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ],
-                                )
-                                    : Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    const Icon(Icons.payment_rounded, size: 24),
-                                    const SizedBox(width: 12),
-                                    const Text(
-                                      'Pay Bill',
-                                      style: TextStyle(
                                         fontSize: 18,
-                                        fontWeight: FontWeight.w700,
-                                        letterSpacing: 0.5,
+                                        color: primaryColor,
+                                      ),
+                                      keyboardType: TextInputType.number,
+                                      inputFormatters: [
+                                        FilteringTextInputFormatter.digitsOnly,
+                                        LengthLimitingTextInputFormatter(7),
+                                      ],
+                                      validator: (value) {
+                                        if (value?.isEmpty == true) {
+                                          return 'Amount is required';
+                                        }
+                                        final amount = double.tryParse(value!);
+                                        if (amount == null || amount <= 0) {
+                                          return 'Enter a valid amount';
+                                        }
+                                        if (amount < 10) {
+                                          return 'Minimum amount is ₹10';
+                                        }
+                                        if (amount > 50000) {
+                                          return 'Maximum amount is ₹50,000';
+                                        }
+                                        return null;
+                                      },
+                                    ),
+                                    const SizedBox(height: 20),
+
+                                    // Info container
+                                    Container(
+                                      padding: const EdgeInsets.all(16),
+                                      decoration: BoxDecoration(
+                                        color: Colors.blue.shade50,
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(color: Colors.blue.shade100),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Icon(
+                                            Icons.info_outline_rounded,
+                                            color: Colors.blue.shade700,
+                                            size: 20,
+                                          ),
+                                          const SizedBox(width: 12),
+                                          Expanded(
+                                            child: Text(
+                                              'Your ${_selectedBillType.toLowerCase()} bill will be processed instantly and confirmation will be sent via SMS.',
+                                              style: TextStyle(
+                                                fontSize: 13,
+                                                color: Colors.blue.shade700,
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ),
                                   ],
                                 ),
                               ),
-                            ),
-                            const SizedBox(height: 24),
+                              const SizedBox(height: 40),
 
-                            // Security note
-                            Container(
-                              padding: const EdgeInsets.all(16),
-                              decoration: BoxDecoration(
-                                color: Colors.green.shade50,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: Colors.green.shade100),
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    Icons.verified_user_rounded,
-                                    color: Colors.green.shade700,
-                                    size: 20,
+                              // Pay button
+                              SizedBox(
+                                width: double.infinity,
+                                child: ElevatedButton(
+                                  onPressed: _isProcessing ? null : _processBillPayment,
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: primaryColor,
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(vertical: 18),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(14),
+                                    ),
+                                    elevation: 0,
+                                    disabledBackgroundColor: Colors.grey.shade300,
                                   ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Text(
-                                      'All bill payments are secured and processed through RBI approved channels',
-                                      style: TextStyle(
-                                        color: Colors.green.shade700,
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w500,
+                                  child: _isProcessing
+                                      ? Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      const SizedBox(
+                                        width: 24,
+                                        height: 24,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2.5,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 16),
+                                      const Text(
+                                        'Processing Payment...',
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ],
+                                  )
+                                      : Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      const Icon(Icons.payment_rounded, size: 24),
+                                      const SizedBox(width: 12),
+                                      const Text(
+                                        'Pay Bill',
+                                        style: TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.w700,
+                                          letterSpacing: 0.5,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 24),
+
+                              // Security note
+                              Container(
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  color: Colors.green.shade50,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: Colors.green.shade100),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.verified_user_rounded,
+                                      color: Colors.green.shade700,
+                                      size: 20,
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Text(
+                                        'All bill payments are secured and processed through RBI approved channels',
+                                        style: TextStyle(
+                                          color: Colors.green.shade700,
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w500,
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
                     ),

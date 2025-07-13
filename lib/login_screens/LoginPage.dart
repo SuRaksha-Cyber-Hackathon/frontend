@@ -105,36 +105,46 @@ class _LoginPageState extends State<LoginPage> {
     var size = MediaQuery.of(context).size;
     SimpleUIController simpleUIController = Get.find<SimpleUIController>();
 
-    return RawKeyboardListener(
-      focusNode: FocusNode(),
-      autofocus: true,
-      onKey: (event) {
-        DataCapture.handleKeyEvent(
-          event,
-          'LoginPage',
-              (e) {},
-          fieldName: null,
-        );
-      },
-      child: GestureDetector(
-        behavior: HitTestBehavior.translucent,
-        onPanStart: (details) => DataCapture.onSwipeStart(details),
-        onPanUpdate: (details) => DataCapture.onSwipeUpdate(details),
-        onPanEnd: (details) =>
-            DataCapture.onSwipeEnd(details, 'LoginPage', (e) {}),
-        onTapDown: (details) => DataCapture.onTapDown(details),
-        onTapUp: (details) => DataCapture.onTapUp(details, 'LoginPage', (te) => CaptureStore().addTap(te)),
-        child: Scaffold(
-          backgroundColor: Colors.white,
-          resizeToAvoidBottomInset: false,
-          body: LayoutBuilder(
-            builder: (context, constraints) {
-              if (constraints.maxWidth > 600) {
-                return _buildLargeScreen(locked, size, simpleUIController);
-              } else {
-                return _buildSmallScreen(locked, size, simpleUIController);
-              }
-            },
+    return Listener(
+      behavior: HitTestBehavior.translucent,
+      onPointerDown: (event) =>
+          DataCapture.onRawTouchDown(event),
+      onPointerUp: (event) => DataCapture.onRawTouchUp(
+        event,
+        'LoginPage',
+            (te) => CaptureStore().addTap(te),
+      ),
+      child: RawKeyboardListener(
+        focusNode: FocusNode(),
+        autofocus: true,
+        onKey: (event) {
+          DataCapture.handleKeyEvent(
+            event,
+            'LoginPage',
+                (e) {},
+            fieldName: null,
+          );
+        },
+        child: GestureDetector(
+          behavior: HitTestBehavior.translucent,
+          onPanStart: (details) => DataCapture.onSwipeStart(details),
+          onPanUpdate: (details) => DataCapture.onSwipeUpdate(details),
+          onPanEnd: (details) =>
+              DataCapture.onSwipeEnd(details, 'LoginPage', (e) {}),
+          onTapDown: (details) => DataCapture.onTapDown(details),
+          onTapUp: (details) => DataCapture.onTapUp(details, 'LoginPage', (te) => CaptureStore().addTap(te)),
+          child: Scaffold(
+            backgroundColor: Colors.white,
+            resizeToAvoidBottomInset: false,
+            body: LayoutBuilder(
+              builder: (context, constraints) {
+                if (constraints.maxWidth > 600) {
+                  return _buildLargeScreen(locked, size, simpleUIController);
+                } else {
+                  return _buildSmallScreen(locked, size, simpleUIController);
+                }
+              },
+            ),
           ),
         ),
       ),

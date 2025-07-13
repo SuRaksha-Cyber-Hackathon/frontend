@@ -60,185 +60,194 @@ class _StatementsPageState extends State<StatementsPage> with SingleTickerProvid
   @override
   Widget build(BuildContext context) {
     final primaryColor = Colors.indigo.shade900;
-    return RawKeyboardListener(
-      focusNode: _keyboardFocus,
-      onKey: (event) => DataCapture.handleKeyEvent(
+    return Listener(
+      behavior: HitTestBehavior.translucent,
+      onPointerDown: (event) =>
+          DataCapture.onRawTouchDown(event),
+      onPointerUp: (event) => DataCapture.onRawTouchUp(
         event,
         'statements',
-            (kp) => CaptureStore().addKey(kp),
-      ),
-      child: GestureDetector(
-        onPanStart: (details) => DataCapture.onSwipeStart(details),
-        onPanUpdate: (details) => DataCapture.onSwipeUpdate(details),
-        onPanEnd: (details) => DataCapture.onSwipeEnd(details, 'statements', (sw) => CaptureStore().addSwipe(sw)),
-        onTapDown: (details) => DataCapture.onTapDown(details),
-        onTapUp: (details) => DataCapture.onTapUp(details, 'statements', (te) => CaptureStore().addTap(te)),
-        child: Scaffold(
-          backgroundColor: Colors.white,
-          body: NotificationListener<ScrollNotification>(
-            onNotification: (notification) {
-              if (notification is ScrollStartNotification) {
-                DataCapture.onScrollStart(notification);
-              } else if (notification is ScrollUpdateNotification) {
-                DataCapture.onScrollUpdate(notification);
-              } else if (notification is ScrollEndNotification) {
-                DataCapture.onScrollEnd(notification, 'statements', (se) => CaptureStore().addScroll(se));
-              }
-              return true;
-            },
-            // Use AnimatedBuilder to apply both slide and fade animations
-            child: AnimatedBuilder(
-              animation: _animationController,
-              builder: (context, child) {
-                return Opacity(
-                  opacity: _fadeAnimation.value,
-                  child: Transform.translate(
-                    offset: Offset(0, _slideAnimation.value),
-                    child: child,
-                  ),
-                );
+            (te) => CaptureStore().addTap(te),
+      ),      child: RawKeyboardListener(
+        focusNode: _keyboardFocus,
+        onKey: (event) => DataCapture.handleKeyEvent(
+          event,
+          'statements',
+              (kp) => CaptureStore().addKey(kp),
+        ),
+        child: GestureDetector(
+          onPanStart: (details) => DataCapture.onSwipeStart(details),
+          onPanUpdate: (details) => DataCapture.onSwipeUpdate(details),
+          onPanEnd: (details) => DataCapture.onSwipeEnd(details, 'statements', (sw) => CaptureStore().addSwipe(sw)),
+          onTapDown: (details) => DataCapture.onTapDown(details),
+          onTapUp: (details) => DataCapture.onTapUp(details, 'statements', (te) => CaptureStore().addTap(te)),
+          child: Scaffold(
+            backgroundColor: Colors.white,
+            body: NotificationListener<ScrollNotification>(
+              onNotification: (notification) {
+                if (notification is ScrollStartNotification) {
+                  DataCapture.onScrollStart(notification);
+                } else if (notification is ScrollUpdateNotification) {
+                  DataCapture.onScrollUpdate(notification);
+                } else if (notification is ScrollEndNotification) {
+                  DataCapture.onScrollEnd(notification, 'statements', (se) => CaptureStore().addScroll(se));
+                }
+                return true;
               },
-              child: SingleChildScrollView(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 48, 20, 20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // --- Header Section ---
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: Colors.indigo.shade50,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: Colors.indigo.shade100,
-                                width: 1,
+              // Use AnimatedBuilder to apply both slide and fade animations
+              child: AnimatedBuilder(
+                animation: _animationController,
+                builder: (context, child) {
+                  return Opacity(
+                    opacity: _fadeAnimation.value,
+                    child: Transform.translate(
+                      offset: Offset(0, _slideAnimation.value),
+                      child: child,
+                    ),
+                  );
+                },
+                child: SingleChildScrollView(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 48, 20, 20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // --- Header Section ---
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: Colors.indigo.shade50,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: Colors.indigo.shade100,
+                                  width: 1,
+                                ),
+                              ),
+                              child: Icon(
+                                Icons.receipt_long_rounded,
+                                color: primaryColor,
+                                size: 28,
                               ),
                             ),
-                            child: Icon(
-                              Icons.receipt_long_rounded,
-                              color: primaryColor,
-                              size: 28,
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Account Statements',
-                                  style: TextStyle(
-                                    fontSize: 24,
-                                    fontWeight: FontWeight.w700,
-                                    color: primaryColor,
-                                    letterSpacing: -0.5,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  'View All Transactions',
-                                  style: TextStyle(
-                                    fontSize: 15,
-                                    color: Colors.grey.shade600,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-
-                      // --- Account & Period Selection ---
-                      _buildDropdownField(
-                        label: 'Select Account',
-                        value: _selectedAccount,
-                        options: const ['Savings Account - ****1234', 'Current Account - ****5678'],
-                        onChanged: (newValue) {
-                          if (newValue != null) {
-                            setState(() => _selectedAccount = newValue);
-                          }
-                        },
-                      ),
-                      _buildDropdownField(
-                        label: 'Select Period',
-                        value: _selectedPeriod,
-                        options: const ['Last 3 Months', 'Last 6 Months', 'Last Year', 'Custom Range'],
-                        onChanged: (newValue) {
-                          if (newValue != null) {
-                            setState(() => _selectedPeriod = newValue);
-                          }
-                        },
-                      ),
-                      const SizedBox(height: 32),
-
-                      // --- Available Statements List ---
-                      _sectionHeader('Available Statements', 'Download your monthly or quarterly statements'),
-                      const SizedBox(height: 10),
-                      ListView.builder(
-                        itemCount: _statements.length,
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemBuilder: (context, index) {
-                          final s = _statements[index];
-                          return Card(
-                            elevation: 0,
-                            margin: const EdgeInsets.symmetric(vertical: 6.0),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                              side: BorderSide(color: Colors.grey.shade200, width: 1),
-                            ),
-                            color: Colors.white,
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 16.0),
-                              child: Row(
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Container(
-                                    padding: const EdgeInsets.all(10),
-                                    decoration: BoxDecoration(
-                                      color: Colors.indigo.shade50,
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                    child: Icon(Icons.description_outlined, color: Colors.indigo.shade700, size: 24),
-                                  ),
-                                  const SizedBox(width: 16),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          s['month'],
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.w600,
-                                            fontSize: 15.5,
-                                            color: Colors.grey.shade800,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 5),
-                                        Text(
-                                          '${s['type']} • ${s['size']} • ${s['date']}',
-                                          style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
-                                        ),
-                                      ],
+                                  Text(
+                                    'Account Statements',
+                                    style: TextStyle(
+                                      fontSize: 24,
+                                      fontWeight: FontWeight.w700,
+                                      color: primaryColor,
+                                      letterSpacing: -0.5,
                                     ),
                                   ),
-                                  const SizedBox(width: 8),
-                                  IconButton(
-                                    icon: Icon(Icons.download_for_offline_outlined, color: Colors.indigo.shade800),
-                                    tooltip: 'Download ${s['month']}',
-                                    onPressed: () => _downloadStatement(s['month']),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'View All Transactions',
+                                    style: TextStyle(
+                                      fontSize: 15,
+                                      color: Colors.grey.shade600,
+                                      fontWeight: FontWeight.w500,
+                                    ),
                                   ),
                                 ],
                               ),
                             ),
-                          );
-                        },
-                      ),
-                    ],
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+
+                        // --- Account & Period Selection ---
+                        _buildDropdownField(
+                          label: 'Select Account',
+                          value: _selectedAccount,
+                          options: const ['Savings Account - ****1234', 'Current Account - ****5678'],
+                          onChanged: (newValue) {
+                            if (newValue != null) {
+                              setState(() => _selectedAccount = newValue);
+                            }
+                          },
+                        ),
+                        _buildDropdownField(
+                          label: 'Select Period',
+                          value: _selectedPeriod,
+                          options: const ['Last 3 Months', 'Last 6 Months', 'Last Year', 'Custom Range'],
+                          onChanged: (newValue) {
+                            if (newValue != null) {
+                              setState(() => _selectedPeriod = newValue);
+                            }
+                          },
+                        ),
+                        const SizedBox(height: 32),
+
+                        // --- Available Statements List ---
+                        _sectionHeader('Available Statements', 'Download your monthly or quarterly statements'),
+                        const SizedBox(height: 10),
+                        ListView.builder(
+                          itemCount: _statements.length,
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemBuilder: (context, index) {
+                            final s = _statements[index];
+                            return Card(
+                              elevation: 0,
+                              margin: const EdgeInsets.symmetric(vertical: 6.0),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                side: BorderSide(color: Colors.grey.shade200, width: 1),
+                              ),
+                              color: Colors.white,
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 16.0),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(10),
+                                      decoration: BoxDecoration(
+                                        color: Colors.indigo.shade50,
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      child: Icon(Icons.description_outlined, color: Colors.indigo.shade700, size: 24),
+                                    ),
+                                    const SizedBox(width: 16),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            s['month'],
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.w600,
+                                              fontSize: 15.5,
+                                              color: Colors.grey.shade800,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 5),
+                                          Text(
+                                            '${s['type']} • ${s['size']} • ${s['date']}',
+                                            style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    IconButton(
+                                      icon: Icon(Icons.download_for_offline_outlined, color: Colors.indigo.shade800),
+                                      tooltip: 'Download ${s['month']}',
+                                      onPressed: () => _downloadStatement(s['month']),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),

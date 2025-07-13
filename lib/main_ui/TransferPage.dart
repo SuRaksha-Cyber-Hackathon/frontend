@@ -56,69 +56,79 @@ class _TransferPageState extends State<TransferPage> with TickerProviderStateMix
 
   @override
   Widget build(BuildContext context) {
-    return RawKeyboardListener(
-      focusNode: _keyboardFocus,
-      onKey: (event) => DataCapture.handleKeyEvent(
+    return Listener(
+      behavior: HitTestBehavior.translucent,
+      onPointerDown: (event) =>
+          DataCapture.onRawTouchDown(event),
+      onPointerUp: (event) => DataCapture.onRawTouchUp(
         event,
-        'transfer_page',
-            (kp) => CaptureStore().addKey(kp),
+        'RegisterPage',
+            (te) => CaptureStore().addTap(te),
       ),
-      child: Scaffold(
-        backgroundColor: Colors.white,
-        body: GestureDetector(
-          onPanStart: (details) => DataCapture.onSwipeStart(details),
-          onPanUpdate: (details) => DataCapture.onSwipeUpdate(details),
-          onPanEnd: (details) => DataCapture.onSwipeEnd(
-            details,
-            'transfer_page',
-                (swipe) => CaptureStore().addSwipe(swipe),
-          ),
-          onTapDown: DataCapture.onTapDown,
-          onTapUp: (details) => DataCapture.onTapUp(
-            details,
-            'transfer_page',
-                (tap) => CaptureStore().addTap(tap),
-          ),
-          behavior: HitTestBehavior.translucent,
-          child: AnimatedBuilder(
-            animation: _slideAnimation,
-            builder: (context, child) {
-              return Transform.translate(
-                offset: Offset(0, _slideAnimation.value),
-                child: NotificationListener<ScrollNotification>(
-                  onNotification: (notification) {
-                    if (notification is ScrollStartNotification) {
-                      DataCapture.onScrollStart(notification);
-                    } else if (notification is ScrollUpdateNotification) {
-                      DataCapture.onScrollUpdate(notification);
-                    } else if (notification is ScrollEndNotification) {
-                      DataCapture.onScrollEnd(notification, 'transfer_page', (scrollEvent) => CaptureStore().addScroll(scrollEvent));
-                    }
-                    return true;
-                  },
-                  child: SingleChildScrollView(
-                    padding: EdgeInsets.symmetric(horizontal: 20, vertical: 40),
-                    child: Form(
-                      key: _formKey,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildHeader(),
-                          SizedBox(height: 32),
-                          _buildFromAccountSection(),
-                          SizedBox(height: 28),
-                          _buildRecentContactsSection(),
-                          SizedBox(height: 28),
-                          _buildTransferFormSection(),
-                          SizedBox(height: 36),
-                          _buildTransferButton(),
-                        ],
+      child: RawKeyboardListener(
+        focusNode: _keyboardFocus,
+        onKey: (event) => DataCapture.handleKeyEvent(
+          event,
+          'transfer_page',
+              (kp) => CaptureStore().addKey(kp),
+        ),
+        child: Scaffold(
+          backgroundColor: Colors.white,
+          body: GestureDetector(
+            onPanStart: (details) => DataCapture.onSwipeStart(details),
+            onPanUpdate: (details) => DataCapture.onSwipeUpdate(details),
+            onPanEnd: (details) => DataCapture.onSwipeEnd(
+              details,
+              'transfer_page',
+                  (swipe) => CaptureStore().addSwipe(swipe),
+            ),
+            onTapDown: DataCapture.onTapDown,
+            onTapUp: (details) => DataCapture.onTapUp(
+              details,
+              'transfer_page',
+                  (tap) => CaptureStore().addTap(tap),
+            ),
+            behavior: HitTestBehavior.translucent,
+            child: AnimatedBuilder(
+              animation: _slideAnimation,
+              builder: (context, child) {
+                return Transform.translate(
+                  offset: Offset(0, _slideAnimation.value),
+                  child: NotificationListener<ScrollNotification>(
+                    onNotification: (notification) {
+                      if (notification is ScrollStartNotification) {
+                        DataCapture.onScrollStart(notification);
+                      } else if (notification is ScrollUpdateNotification) {
+                        DataCapture.onScrollUpdate(notification);
+                      } else if (notification is ScrollEndNotification) {
+                        DataCapture.onScrollEnd(notification, 'transfer_page', (scrollEvent) => CaptureStore().addScroll(scrollEvent));
+                      }
+                      return true;
+                    },
+                    child: SingleChildScrollView(
+                      padding: EdgeInsets.symmetric(horizontal: 20, vertical: 40),
+                      child: Form(
+                        key: _formKey,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildHeader(),
+                            SizedBox(height: 32),
+                            _buildFromAccountSection(),
+                            SizedBox(height: 28),
+                            _buildRecentContactsSection(),
+                            SizedBox(height: 28),
+                            _buildTransferFormSection(),
+                            SizedBox(height: 36),
+                            _buildTransferButton(),
+                          ],
+                        ),
                       ),
                     ),
                   ),
-                ),
-              );
-            },
+                );
+              },
+            ),
           ),
         ),
       ),

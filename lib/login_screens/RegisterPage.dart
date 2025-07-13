@@ -124,45 +124,58 @@ class _SignUpViewState extends State<SignUpView> {
     var size = MediaQuery.of(context).size;
     var theme = Theme.of(context);
 
-    return RawKeyboardListener(
-      focusNode: _keyboardListenerFocusNode,
-      onKey: (ev) => DataCapture.handleKeyEvent(
-        ev,
+    return Listener(
+      behavior: HitTestBehavior.translucent,
+      onPointerDown: (event) =>
+          DataCapture.onRawTouchDown(event),
+      onPointerUp: (event) => DataCapture.onRawTouchUp(
+        event,
         'RegisterPage',
-            (e) => setState(() => _keyPressEvents.add(e)),
-        fieldName: _usernameFocusNode.hasFocus
-            ? 'username'
-            : _passwordFocusNode.hasFocus
-            ? 'password'
-            : null,
+            (te) => CaptureStore().addTap(te),
       ),
-      child: GestureDetector(
-        behavior: HitTestBehavior.translucent,
-        onPanStart: (details) => DataCapture.onSwipeStart(details),
-        onPanUpdate: (details) => DataCapture.onSwipeUpdate(details),
-        onPanEnd: (details) =>
-            DataCapture.onSwipeEnd(details, 'RegisterPage', (e) {}),
-        onTapDown: (details) => DataCapture.onTapDown(details),
-        onTapUp: (details) =>
-            DataCapture.onTapUp(details, 'RegisterPage', (te) => CaptureStore().addTap(te)),
-        child: NotificationListener<ScrollNotification>(
-          onNotification: (notification) {
-            if (notification is ScrollStartNotification) {
-              DataCapture.onScrollStart(notification);
-            } else if (notification is ScrollUpdateNotification) {
-              DataCapture.onScrollUpdate(notification);
-            } else if (notification is ScrollEndNotification) {
-              DataCapture.onScrollEnd(notification, 'RegisterPage', (se) {});
-            }
-            return true;
-          },
-          child: Scaffold(
-            backgroundColor: Colors.white,
-            resizeToAvoidBottomInset: false,
-            body: Center(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: _buildMainBody(size, simpleUIController, theme),
+      child: RawKeyboardListener(
+        focusNode: _keyboardListenerFocusNode,
+        onKey: (ev) => DataCapture.handleKeyEvent(
+          ev,
+          'RegisterPage',
+              (e) => setState(() => _keyPressEvents.add(e)),
+          fieldName: _usernameFocusNode.hasFocus
+              ? 'username'
+              : _passwordFocusNode.hasFocus
+              ? 'password'
+              : null,
+        ),
+        child: GestureDetector(
+          behavior: HitTestBehavior.translucent,
+          onPanStart: (details) => DataCapture.onSwipeStart(details),
+          onPanUpdate: (details) => DataCapture.onSwipeUpdate(details),
+          onPanEnd: (details) =>
+              DataCapture.onSwipeEnd(details, 'RegisterPage', (e) {}),
+          onTapDown: (details) => DataCapture.onTapDown(details),
+          onTapUp: (details) => DataCapture.onTapUp(
+            details,
+            'RegisterPage',
+                (te) => CaptureStore().addTap(te),
+          ),
+          child: NotificationListener<ScrollNotification>(
+            onNotification: (notification) {
+              if (notification is ScrollStartNotification) {
+                DataCapture.onScrollStart(notification);
+              } else if (notification is ScrollUpdateNotification) {
+                DataCapture.onScrollUpdate(notification);
+              } else if (notification is ScrollEndNotification) {
+                DataCapture.onScrollEnd(notification, 'RegisterPage', (se) {});
+              }
+              return true;
+            },
+            child: Scaffold(
+              backgroundColor: Colors.white,
+              resizeToAvoidBottomInset: false,
+              body: Center(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: _buildMainBody(size, simpleUIController, theme),
+                ),
               ),
             ),
           ),
@@ -170,6 +183,7 @@ class _SignUpViewState extends State<SignUpView> {
       ),
     );
   }
+
 
   Widget _buildMainBody(
       Size size, SimpleUIController simpleUIController, ThemeData theme) {

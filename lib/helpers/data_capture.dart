@@ -4,8 +4,12 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:sensors_plus/sensors_plus.dart';
+import '../device_id/DeviceIDManager.dart';
+import '../main.dart';
+import '../models/SiameseModel.dart';
 import '../models/models.dart';
 import 'data_store.dart';
+import 'offline_data_sender.dart';
 
 /// Manages key press, swipe, and tap event capture.
 class DataCapture {
@@ -13,6 +17,7 @@ class DataCapture {
   static final Map<LogicalKeyboardKey, DateTime> _keyDownTimes = {};
   static LogicalKeyboardKey? _lastKey;
   static DateTime? _lastRelease;
+
   static const List<MapEntry<String, String>> _commonDigrams = [
     MapEntry('t', 'h'), MapEntry('h', 'e'), MapEntry('i', 'n'),
     MapEntry('e', 'r'), MapEntry('a', 'n'), MapEntry('r', 'e'),
@@ -203,12 +208,13 @@ class DataCapture {
   }
 
   /// Call on tap up (e.g. in GestureDetector).
-  static void onTapUp(
+  static Future<void> onTapUp(
       TapUpDetails details,
       String contextScreen,
       void Function(TapEvent) callback,
-      ) {
+      ) async {
     if (_tapStart == null || _tapStartTime == null) return;
+
     final tapEnd = DateTime.now();
     final durationMs = tapEnd.difference(_tapStartTime!).inMilliseconds;
 
@@ -219,12 +225,112 @@ class DataCapture {
       timestamp: tapEnd,
       contextScreen: contextScreen,
     );
+
     callback(te);
     CaptureStore().addTap(te);
     print('TapEvent captured: ${te.toMap()}');
+
+    try {
+      final userId = await DeviceIDManager.getUUID();
+
+      final preprocessedTap = preprocessTapEvent(
+        x: te.x,
+        y: te.y,
+        durationMs: te.durationMs,
+        contextScreen: te.contextScreen,
+      );
+
+      final bool result = await TapAuthenticationManager()
+          .processTap(userId, preprocessedTap);
+
+      if (TapAuthenticationManager().isEnrolled) {
+        if (result) {
+          print("✅ Authenticated");
+        } else {
+          print("🚨 Authentication failed");
+        }
+      } else {
+        print("🧠 Enrollment in progress...");
+      }
+    } catch (e) {
+      print("❌ Error in BBA tap processing: $e");
+    }
+
     _tapStart = null;
     _tapStartTime = null;
   }
+
+  // ------------ RAW TAPS (BUTTON PRESSES, ETC) ------------
+
+  static Offset? _rawTapStart;
+  static DateTime? _rawTapStartTime;
+
+  static void onRawTouchDown(PointerDownEvent event) {
+    _rawTapStart = event.position;
+    _rawTapStartTime = DateTime.now();
+  }
+
+
+  static Future<void> onRawTouchUp(
+      PointerUpEvent event,
+      String contextScreen,
+      void Function(TapEvent) callback,
+      ) async {
+    if (_rawTapStart == null || _rawTapStartTime == null) return;
+
+    if (contextScreen == 'home') {
+      print("⚠️ Skipping Raw Tap capture for 'home' screen.");
+      return;
+    }
+
+    final tapEnd = DateTime.now();
+    final durationMs = tapEnd.difference(_rawTapStartTime!).inMilliseconds;
+
+    final te = TapEvent(
+      x: _rawTapStart!.dx,
+      y: _rawTapStart!.dy,
+      durationMs: durationMs,
+      timestamp: tapEnd,
+      contextScreen: contextScreen,
+    );
+
+    callback(te);
+    CaptureStore().addTap(te);
+    print('📍 Raw TapEvent captured: ${te.toMap()}');
+
+    try {
+      final userId = await DeviceIDManager.getUUID();
+
+      final preprocessedTap = preprocessTapEvent(
+        x: te.x,
+        y: te.y,
+        durationMs: te.durationMs,
+        contextScreen: te.contextScreen,
+      );
+
+      final TapAuthenticationManager authManager = TapAuthenticationManager();
+
+      final bool result = await authManager.processTap(userId, preprocessedTap);
+
+      if (authManager.isEnrolled) {
+        if (authManager.isAnomalous(1.5)) {
+          print("🚨 Anomaly detected over last ${TapAuthenticationManager.rollingWindowSize} taps");
+        } else {
+          print("✅ User behavior normal based on rolling window");
+        }
+      } else {
+        print("🧠 Enrollment in progress...");
+      }
+    } catch (e) {
+      print("❌ Error in Raw BBA tap processing: $e");
+    }
+
+    _rawTapStart = null;
+    _rawTapStartTime = null;
+  }
+
+
+
 
   // ---------- SENSOR DATA ----------
   static StreamSubscription<AccelerometerEvent>? _accelSub;
