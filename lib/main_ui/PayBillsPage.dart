@@ -1,9 +1,12 @@
 // pay_bills_page.dart
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../device_id/DeviceIDManager.dart';
 import '../helpers/data_capture.dart';
 import '../helpers/data_store.dart';
+import '../helpers/keypress_data_sender.dart';
 
 class PayBillsPage extends StatefulWidget {
   @override
@@ -729,6 +732,26 @@ class _PayBillsPageState extends State<PayBillsPage>
 
       await Future.delayed(const Duration(seconds: 3));
 
+      try {
+        final uuid = await DeviceIDManager.getUUID();
+        final authManager = KeypressAuthManager(userId: uuid);
+        final isAuthenticated = await authManager.sendKeyPressData(uuid: uuid, context: context);
+
+        if (!isAuthenticated) {
+          setState(() => _isProcessing = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Authentication failed. Payment cancelled.")),
+          );
+          return; // Cancel further processing, do NOT show success dialog
+        }
+      } catch (e) {
+        setState(() => _isProcessing = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Authentication error: $e")),
+        );
+        return;
+      }
+
       setState(() => _isProcessing = false);
 
       if (!mounted) return;
@@ -737,10 +760,12 @@ class _PayBillsPageState extends State<PayBillsPage>
         context: context,
         barrierDismissible: false,
         builder: (ctx) => AlertDialog(
+          backgroundColor: Colors.white,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
           ),
           contentPadding: const EdgeInsets.all(24),
+          titlePadding: const EdgeInsets.fromLTRB(24, 24, 24, 8),
           title: Column(
             children: [
               Container(
@@ -767,52 +792,53 @@ class _PayBillsPageState extends State<PayBillsPage>
               ),
             ],
           ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade50,
-                  borderRadius: BorderRadius.circular(12),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.grey.shade200),
+                  ),
+                  child: Column(
+                    children: [
+                      _buildReceiptRow('Bill Type', _selectedBillType),
+                      _buildReceiptRow('Provider', _selectedProvider),
+                      _buildReceiptRow('Transaction ID', 'TXN${DateTime.now().millisecondsSinceEpoch}'),
+                    ],
+                  ),
                 ),
-                child: Column(
-                  children: [
-                    _buildReceiptRow('Bill Type', _selectedBillType),
-                    _buildReceiptRow('Provider', _selectedProvider),
-                    _buildReceiptRow('${_billTypes[_selectedBillType]!['numberLabel']}', _billNumberController.text),
-                    _buildReceiptRow('Amount', '₹${_amountController.text}'),
-                    _buildReceiptRow('Transaction ID', 'TXN${DateTime.now().millisecondsSinceEpoch}'),
-                  ],
+                const SizedBox(height: 16),
+                Text(
+                  'A confirmation SMS has been sent to your registered mobile number.',
+                  style: TextStyle(
+                    color: Colors.grey.shade600,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  textAlign: TextAlign.center,
                 ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'A confirmation SMS has been sent to your registered mobile number.',
-                style: TextStyle(
-                  color: Colors.grey.shade600,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ],
+              ],
+            ),
           ),
+          actionsPadding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
           actions: [
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: () {
-                  Navigator.pop(ctx);
-                  Navigator.pop(context);
-                },
+                onPressed: () => Navigator.pop(context),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.indigo.shade900,
+                  backgroundColor: Colors.indigo.shade600,
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
+                  elevation: 0,
                 ),
                 child: const Text(
                   'Done',
@@ -825,7 +851,7 @@ class _PayBillsPageState extends State<PayBillsPage>
             ),
           ],
         ),
-      );
+    );
 
       // Clear form
       _billNumberController.clear();
@@ -835,24 +861,34 @@ class _PayBillsPageState extends State<PayBillsPage>
 
   Widget _buildReceiptRow(String label, String value) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            label,
-            style: TextStyle(
-              color: Colors.grey.shade600,
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
+          Expanded(
+            flex: 4,
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey.shade600,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ),
-          Text(
-            value,
-            style: TextStyle(
-              color: Colors.indigo.shade900,
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
+          const SizedBox(width: 12),
+          Expanded(
+            flex: 6,
+            child: Text(
+              value,
+              textAlign: TextAlign.right,
+              softWrap: true,
+              overflow: TextOverflow.visible,
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.indigo.shade900,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
         ],

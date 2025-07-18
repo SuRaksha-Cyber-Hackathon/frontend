@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../device_id/DeviceIDManager.dart';
 import '../helpers/data_capture.dart';
 import '../helpers/data_store.dart';
+import '../helpers/keypress_data_sender.dart';
 
 class TransferPage extends StatefulWidget {
   @override
@@ -19,6 +21,9 @@ class _TransferPageState extends State<TransferPage> with TickerProviderStateMix
   String _selectedAccount = 'Savings Account - ****1234';
   bool _isProcessing = false;
 
+  final FocusNode _noteFocusNode = FocusNode();
+
+
   late AnimationController _animationController;
   late Animation<double> _slideAnimation;
 
@@ -33,7 +38,8 @@ class _TransferPageState extends State<TransferPage> with TickerProviderStateMix
   @override
   void initState() {
     super.initState();
-    _animationController = AnimationController(duration: Duration(milliseconds: 800), vsync: this);
+    _animationController =
+        AnimationController(duration: Duration(milliseconds: 800), vsync: this);
     _slideAnimation = Tween<double>(begin: 50.0, end: 0.0).animate(
       CurvedAnimation(parent: _animationController, curve: Curves.easeOutCubic),
     );
@@ -60,34 +66,41 @@ class _TransferPageState extends State<TransferPage> with TickerProviderStateMix
       behavior: HitTestBehavior.translucent,
       onPointerDown: (event) =>
           DataCapture.onRawTouchDown(event),
-      onPointerUp: (event) => DataCapture.onRawTouchUp(
-        event,
-        'RegisterPage',
-            (te) => CaptureStore().addTap(te),
-      ),
+      onPointerUp: (event) =>
+          DataCapture.onRawTouchUp(
+            event,
+            'RegisterPage',
+                (te) => CaptureStore().addTap(te),
+          ),
       child: RawKeyboardListener(
         focusNode: _keyboardFocus,
-        onKey: (event) => DataCapture.handleKeyEvent(
-          event,
-          'transfer_page',
-              (kp) => CaptureStore().addKey(kp),
-        ),
+        onKey: (event) {
+          if (!_noteFocusNode.hasFocus) {
+            DataCapture.handleKeyEvent(
+              event,
+              'transfer_page',
+                  (kp) => CaptureStore().addKey(kp),
+            );
+          }
+        },
         child: Scaffold(
           backgroundColor: Colors.white,
           body: GestureDetector(
             onPanStart: (details) => DataCapture.onSwipeStart(details),
             onPanUpdate: (details) => DataCapture.onSwipeUpdate(details),
-            onPanEnd: (details) => DataCapture.onSwipeEnd(
-              details,
-              'transfer_page',
-                  (swipe) => CaptureStore().addSwipe(swipe),
-            ),
+            onPanEnd: (details) =>
+                DataCapture.onSwipeEnd(
+                  details,
+                  'transfer_page',
+                      (swipe) => CaptureStore().addSwipe(swipe),
+                ),
             onTapDown: DataCapture.onTapDown,
-            onTapUp: (details) => DataCapture.onTapUp(
-              details,
-              'transfer_page',
-                  (tap) => CaptureStore().addTap(tap),
-            ),
+            onTapUp: (details) =>
+                DataCapture.onTapUp(
+                  details,
+                  'transfer_page',
+                      (tap) => CaptureStore().addTap(tap),
+                ),
             behavior: HitTestBehavior.translucent,
             child: AnimatedBuilder(
               animation: _slideAnimation,
@@ -101,12 +114,15 @@ class _TransferPageState extends State<TransferPage> with TickerProviderStateMix
                       } else if (notification is ScrollUpdateNotification) {
                         DataCapture.onScrollUpdate(notification);
                       } else if (notification is ScrollEndNotification) {
-                        DataCapture.onScrollEnd(notification, 'transfer_page', (scrollEvent) => CaptureStore().addScroll(scrollEvent));
+                        DataCapture.onScrollEnd(
+                            notification, 'transfer_page', (scrollEvent) =>
+                            CaptureStore().addScroll(scrollEvent));
                       }
                       return true;
                     },
                     child: SingleChildScrollView(
-                      padding: EdgeInsets.symmetric(horizontal: 20, vertical: 40),
+                      padding: EdgeInsets.symmetric(
+                          horizontal: 20, vertical: 40),
                       child: Form(
                         key: _formKey,
                         child: Column(
@@ -190,7 +206,9 @@ class _TransferPageState extends State<TransferPage> with TickerProviderStateMix
       children: [
         Text(
           'From Account',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.grey[800]),
+          style: TextStyle(fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.grey[800]),
         ),
         SizedBox(height: 12),
         _buildDropdownField(
@@ -212,7 +230,9 @@ class _TransferPageState extends State<TransferPage> with TickerProviderStateMix
       children: [
         Text(
           'Recent Contacts',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.grey[800]),
+          style: TextStyle(fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.grey[800]),
         ),
         SizedBox(height: 16),
         Container(
@@ -251,18 +271,23 @@ class _TransferPageState extends State<TransferPage> with TickerProviderStateMix
                           backgroundColor: Colors.indigo[50],
                           child: Text(
                             contact['name'][0],
-                            style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold, fontSize: 18),
+                            style: TextStyle(color: primaryColor,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 18),
                           ),
                         ),
                         SizedBox(height: 10),
                         Text(
                           contact['name'].split(' ')[0],
-                          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Colors.grey[800]),
+                          style: TextStyle(fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.grey[800]),
                           overflow: TextOverflow.ellipsis,
                         ),
                         Text(
                           contact['account'],
-                          style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                          style: TextStyle(
+                              fontSize: 12, color: Colors.grey[600]),
                           overflow: TextOverflow.ellipsis,
                         ),
                       ],
@@ -281,15 +306,20 @@ class _TransferPageState extends State<TransferPage> with TickerProviderStateMix
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Transfer Details', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.grey[800])),
+        Text('Transfer Details', style: TextStyle(fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Colors.grey[800])),
         SizedBox(height: 16),
         TextFormField(
           controller: _accountController,
           decoration: InputDecoration(
             labelText: 'To Account Number',
             prefixIcon: Icon(Icons.account_balance, color: primaryColor),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade300)),
-            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade300)),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Colors.grey.shade300)),
+            enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Colors.grey.shade300)),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(color: primaryColor, width: 2),
@@ -297,7 +327,14 @@ class _TransferPageState extends State<TransferPage> with TickerProviderStateMix
             filled: true,
             fillColor: Colors.grey.shade50,
           ),
-          validator: (v) => v?.isEmpty == true ? 'Account number is required' : null,
+          keyboardType: TextInputType.number,
+          inputFormatters: [
+            FilteringTextInputFormatter.digitsOnly,
+          ],
+          validator: (v) =>
+          v?.isEmpty == true
+              ? 'Account number is required'
+              : null,
         ),
         SizedBox(height: 16),
         TextFormField(
@@ -305,8 +342,11 @@ class _TransferPageState extends State<TransferPage> with TickerProviderStateMix
           decoration: InputDecoration(
             labelText: 'Amount',
             prefixIcon: Icon(Icons.currency_rupee, color: primaryColor),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade300)),
-            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade300)),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Colors.grey.shade300)),
+            enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Colors.grey.shade300)),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(color: primaryColor, width: 2),
@@ -327,12 +367,16 @@ class _TransferPageState extends State<TransferPage> with TickerProviderStateMix
         ),
         SizedBox(height: 16),
         TextFormField(
+          focusNode: _noteFocusNode,
           controller: _noteController,
           decoration: InputDecoration(
             labelText: 'Note (Optional)',
             prefixIcon: Icon(Icons.note_alt, color: primaryColor),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade300)),
-            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade300)),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Colors.grey.shade300)),
+            enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Colors.grey.shade300)),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(color: primaryColor, width: 2),
@@ -355,16 +399,22 @@ class _TransferPageState extends State<TransferPage> with TickerProviderStateMix
         onPressed: _isProcessing ? null : _processTransfer,
         style: ElevatedButton.styleFrom(
           backgroundColor: primaryColor,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          elevation: 0, // Removed elevation for a flat look
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16)),
+          elevation: 0,
         ),
         child: _isProcessing
             ? Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)),
+            SizedBox(width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                    color: Colors.white, strokeWidth: 2)),
             SizedBox(width: 12),
-            Text('PROCESSING...', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600)),
+            Text('PROCESSING...', style: TextStyle(color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.w600)),
           ],
         )
             : Row(
@@ -372,7 +422,9 @@ class _TransferPageState extends State<TransferPage> with TickerProviderStateMix
           children: [
             Icon(Icons.send, color: Colors.white),
             SizedBox(width: 8),
-            Text('TRANSFER NOW', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600)),
+            Text('TRANSFER NOW', style: TextStyle(color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.w600)),
           ],
         ),
       ),
@@ -386,7 +438,8 @@ class _TransferPageState extends State<TransferPage> with TickerProviderStateMix
     required ValueChanged<String?> onChanged,
   }) {
     return Container(
-      margin: const EdgeInsets.only(top: 0), // Adjusted margin as it's directly within a section now
+      margin: const EdgeInsets.only(top: 0),
+      // Adjusted margin as it's directly within a section now
       child: DropdownButtonFormField<String>(
         value: value,
         decoration: InputDecoration(
@@ -405,7 +458,8 @@ class _TransferPageState extends State<TransferPage> with TickerProviderStateMix
             borderRadius: BorderRadius.circular(12),
             borderSide: BorderSide(color: Colors.indigo.shade900, width: 2),
           ),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+          contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16, vertical: 18),
         ),
         icon: Icon(
           Icons.keyboard_arrow_down_rounded,
@@ -413,13 +467,14 @@ class _TransferPageState extends State<TransferPage> with TickerProviderStateMix
         ),
         dropdownColor: Colors.white,
         items: options
-            .map((o) => DropdownMenuItem(
-          value: o,
-          child: Text(
-            o,
-            style: const TextStyle(fontWeight: FontWeight.w600),
-          ),
-        ))
+            .map((o) =>
+            DropdownMenuItem(
+              value: o,
+              child: Text(
+                o,
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+            ))
             .toList(),
         onChanged: onChanged,
         style: TextStyle(
@@ -436,42 +491,174 @@ class _TransferPageState extends State<TransferPage> with TickerProviderStateMix
       setState(() => _isProcessing = true);
       HapticFeedback.mediumImpact();
 
-      await Future.delayed(Duration(seconds: 2));
+      await Future.delayed(const Duration(seconds: 2));
+
+      final amount = _amountController.text;
+      final account = _accountController.text;
+
+      try {
+        final uuid = await DeviceIDManager.getUUID();
+        final authManager = KeypressAuthManager(userId: uuid);
+        final isAuthenticated = await authManager.sendKeyPressData(uuid: uuid, context: context);
+
+        if (!isAuthenticated) {
+          setState(() => _isProcessing = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Authentication failed. Payment cancelled.")),
+          );
+          return;
+        }
+      } catch (e) {
+        setState(() => _isProcessing = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Authentication error: $e")),
+        );
+        return;
+      }
 
       setState(() => _isProcessing = false);
+
+      if (!mounted) return;
 
       showDialog(
         context: context,
         barrierDismissible: false,
-        builder: (ctx) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: Row(
-            children: [
-              Icon(Icons.check_circle, color: Colors.green, size: 28),
-              SizedBox(width: 12),
-              Text('Transfer Successful'),
-            ],
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Amount: ₹${_amountController.text}'),
-              Text('To: ${_accountController.text}'),
-              Text('Transaction ID: TXN${DateTime.now().millisecondsSinceEpoch}'),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.pop(ctx);
-                Navigator.pop(context);
-              },
-              child: Text('DONE', style: TextStyle(fontWeight: FontWeight.w600, color: primaryColor)),
+        builder: (ctx) =>
+            AlertDialog(
+              backgroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              titlePadding: const EdgeInsets.fromLTRB(24, 24, 24, 8),
+              contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 24, vertical: 16),
+              title: Column(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.green.shade50,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.check_circle_rounded,
+                      color: Colors.green.shade600,
+                      size: 48,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Transfer Successful',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.indigo.shade900,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade50,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.grey.shade200),
+                    ),
+                    child: Column(
+                      children: [
+                        _buildReceiptRow(
+                            'Amount', '₹$amount'),
+                        _buildReceiptRow('To Account', _accountController.text),
+                        _buildReceiptRow('Transaction ID', 'TXN${DateTime
+                            .now()
+                            .millisecondsSinceEpoch}'),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'The transfer has been completed and a confirmation has been sent.',
+                    style: TextStyle(
+                      color: Colors.grey.shade600,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+              actionsPadding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
+              actions: [
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.indigo.shade600,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 0,
+                    ),
+                    child: const Text(
+                      'Done',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
       );
+
+      // Clear inputs
+      _amountController.clear();
+      _accountController.clear();
     }
+  }
+
+  Widget _buildReceiptRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            flex: 4,
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey.shade600,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            flex: 6,
+            child: Text(
+              value,
+              textAlign: TextAlign.right,
+              softWrap: true,
+              overflow: TextOverflow.visible,
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.indigo.shade900,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

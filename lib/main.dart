@@ -23,36 +23,27 @@ Future<void> main() async {
   );
 
   final uuid = await DeviceIDManager.getUUID();
-  // await UserEmbeddingStore().clearUserEmbeddings(uuid);
+
+  final prefs = await SharedPreferences.getInstance();
+  // await prefs.clear() ;
+
   await SiameseModelService().loadModel();
   await TapAuthenticationManager().loadScores();
-
-
-  TapAuthenticationManager().initializeForUser(uuid).then((_) {
-    print('TapAuthenticationManager initialized for user $uuid');
-  });
+  await TapAuthenticationManager().initializeForUser(uuid);
 
   DataSenderService().initialize(uuid);
   DataSenderService().startForegroundSending();
 
-  final prefs = await SharedPreferences.getInstance();
-
   final rememberMe = prefs.getBool('remember_me') ?? false;
   final savedUsername = prefs.getString('username') ?? '';
-
-  // Firebase current user
   final user = FirebaseAuth.instance.currentUser;
-
-  // Decide loggedIn state
   final isLoggedIn = rememberMe && user != null;
-
-  // If logged in, get email from Firebase user or fallback to saved username
   final username = isLoggedIn ? (user.email ?? savedUsername) : '';
 
   Get.put(SimpleUIController());
+
   runApp(MyApp(isLoggedIn: isLoggedIn, username: username));
 }
-
 
 class MyApp extends StatelessWidget {
   final bool isLoggedIn;
@@ -64,9 +55,9 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return GetMaterialApp(
       navigatorKey: navigatorKey,
+      scaffoldMessengerKey: TapAuthenticationManager.messengerKey,
       debugShowCheckedModeBanner: false,
       home: isLoggedIn ? HomePage(username: username) : SignUpView(),
     );
   }
 }
-

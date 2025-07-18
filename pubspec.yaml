@@ -49,6 +49,8 @@ dependencies:
   google_sign_in:
   tflite_flutter: ^0.11.0
   encrypt:
+  sqflite:
+  path_provider:
 
 dev_dependencies:
   flutter_test:

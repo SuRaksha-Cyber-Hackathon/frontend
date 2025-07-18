@@ -1,13 +1,15 @@
 import 'dart:async';
-import 'dart:math';
 import 'package:crazy_bankers/main_ui/AddFundsPage.dart';
 import 'package:crazy_bankers/main_ui/PayBillsPage.dart';
 import 'package:crazy_bankers/main_ui/StatementsPage.dart';
+import 'package:dio/dio.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:sensors_plus/sensors_plus.dart';
 import '../helpers/data_capture.dart';
-import '../helpers/data_sender.dart';
 import '../helpers/data_store.dart';
 import '../login_screens/LoginPage.dart';
 import '../models/models.dart';
@@ -17,7 +19,7 @@ import 'TransferPage.dart';
 
 class HomePage extends StatefulWidget {
   final String username;
-  const HomePage({Key? key, required this.username}) : super(key: key);
+  const HomePage({super.key, required this.username});
 
   @override
   _HomePageState createState() => _HomePageState();
@@ -26,104 +28,80 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   int _selectedIndex = 0;
   final FocusNode _keyboardFocus = FocusNode();
-  int _anomalyThreatLevel = 25;
+  final int _anomalyThreatLevel = 25;
 
   StreamSubscription<AccelerometerEvent>? _accelSub;
   StreamSubscription<GyroscopeEvent>? _gyroSub;
 
-  void _simulateAnomalyChange() {
-    final isSevere = Random().nextBool();
+  void _simulateAnomalyChange() async {
     HapticFeedback.heavyImpact();
 
-    if (isSevere) {
-      setState(() => _anomalyThreatLevel = 80 + Random().nextInt(21));
-      final unlockTime = DateTime.now().add(Duration(seconds: 30));
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (ctx) =>
-            AlertDialog(
-              backgroundColor: Colors.red[50],
-              shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              title: Row(
-                children: [
-                  Icon(Icons.warning, color: Colors.red, size: 28),
-                  SizedBox(width: 8),
-                  Text('Security Alert',
-                      style: TextStyle(
-                          fontWeight: FontWeight.bold, color: Colors.red[800])),
-                ],
-              ),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Severe anomaly detected in your account activity.'),
-                  SizedBox(height: 8),
-                  Text('• Unusual access pattern detected',
-                      style: TextStyle(fontSize: 12)),
-                  Text('• Multiple failed authentication attempts',
-                      style: TextStyle(fontSize: 12)),
-                  Text('• Suspicious transaction behavior',
-                      style: TextStyle(fontSize: 12)),
-                  SizedBox(height: 16),
-                  Container(
-                    padding: EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.red[100],
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      'Application will be locked for 30 seconds for security purposes.',
-                      style: TextStyle(
-                          fontWeight: FontWeight.w500, fontSize: 12),
-                    ),
-                  ),
-                ],
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    Navigator.of(ctx).pop();
-                    Navigator.pushAndRemoveUntil(
-                      context,
-                      MaterialPageRoute(
-                          builder: (_) => LoginPage(lockUntil: unlockTime)),
-                          (_) => false,
-                    );
-                  },
-                  child: Text('ACKNOWLEDGE'),
-                ),
-              ],
-            ),
+    bool success = await _sendOtpToEmail();
+    if (success) {
+      if (!mounted) return;
+
+      // Go to OTP verification screen
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => LoginPage(otpRequired: true)),
+            (_) => false,
       );
     } else {
-      setState(() => _anomalyThreatLevel = 30 + Random().nextInt(30));
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
+      // OTP sending failed - show error
+      if (!mounted) return;
+      showDialog(
+        context: context,
+        builder: (_) => AlertDialog(
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          title: Row(
             children: [
-              Icon(Icons.info_outline, color: Colors.white),
+              Icon(Icons.error_outline, color: Colors.red),
               SizedBox(width: 8),
-              Text('Anomaly detected. Please re-authenticate.'),
+              Text("OTP Send Failed", style: TextStyle(color: Colors.red)),
             ],
           ),
-          backgroundColor: Colors.orange[700],
-          duration: Duration(seconds: 3),
-          behavior: SnackBarBehavior.floating,
+          content: Text("Could not send OTP. Please try again."),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text("OK"),
+            ),
+          ],
         ),
       );
-      Future.delayed(Duration(milliseconds: 1500), () {
-        if(!mounted) return ;
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (_) => LoginPage(lockUntil: null)),
-              (_) => false,
-        );
-      });
     }
   }
+
+  Future<bool> _sendOtpToEmail() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      final email = user?.email;
+      if (email == null) {
+        print("User email not found!");
+        return false;
+      }
+
+      final response = await Dio().post(
+        "https://zhmx7x9x-5000.inc1.devtunnels.ms/send-otp",
+        data: {"email": email},
+      );
+
+      if (response.statusCode == 200) {
+        if (kDebugMode) {
+          print("📧 OTP sent to $email");
+        }
+        return true;
+      } else {
+        print("❌ Failed to send OTP");
+        return false;
+      }
+    } catch (e) {
+      print("❌ Error sending OTP: $e");
+      return false;
+    }
+  }
+
 
   Color _indicatorColor() {
     if (_anomalyThreatLevel > 75) return Colors.red;

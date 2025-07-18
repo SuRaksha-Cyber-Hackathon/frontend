@@ -1,9 +1,13 @@
 // lib/screens/add_funds_page.dart
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../device_id/DeviceIDManager.dart';
 import '../helpers/data_capture.dart';
 import '../helpers/data_store.dart';
+import '../helpers/keypress_data_sender.dart';
+import 'PaymentSuccessPage.dart';
 
 class AddFundsPage extends StatefulWidget {
   const AddFundsPage({super.key});
@@ -23,6 +27,9 @@ class _AddFundsPageState extends State<AddFundsPage>
   late final Animation<double> _slideAnimation;
   late final Animation<double> _fadeAnimation;
   final FocusNode _keyboardFocus = FocusNode();
+
+  bool _isQuickAmountSelected = false;
+
 
   final Map<String, Map<String, dynamic>> _paymentMethods = {
     'UPI': {
@@ -89,19 +96,18 @@ class _AddFundsPageState extends State<AddFundsPage>
     final primaryColor = Colors.indigo.shade900;
     return Listener(
       behavior: HitTestBehavior.translucent,
-      onPointerDown: (event) =>
-          DataCapture.onRawTouchDown(event),
+      onPointerDown: (event) => DataCapture.onRawTouchDown(event),
       onPointerUp: (event) => DataCapture.onRawTouchUp(
         event,
         'add_funds',
-            (te) => CaptureStore().addTap(te),
+        (te) => CaptureStore().addTap(te),
       ),
       child: RawKeyboardListener(
         focusNode: _keyboardFocus,
         onKey: (event) => DataCapture.handleKeyEvent(
           event,
           'add_funds',
-              (kp) => CaptureStore().addKey(kp),
+          (kp) => CaptureStore().addKey(kp),
         ),
         child: GestureDetector(
           onPanStart: (details) => DataCapture.onSwipeStart(details),
@@ -109,13 +115,13 @@ class _AddFundsPageState extends State<AddFundsPage>
           onPanEnd: (details) => DataCapture.onSwipeEnd(
             details,
             'add_funds',
-                (sw) => CaptureStore().addSwipe(sw),
+            (sw) => CaptureStore().addSwipe(sw),
           ),
           onTapDown: (details) => DataCapture.onTapDown(details),
           onTapUp: (details) => DataCapture.onTapUp(
             details,
             'add_funds',
-                (te) => CaptureStore().addTap(te),
+            (te) => CaptureStore().addTap(te),
           ),
           child: Scaffold(
             backgroundColor: Colors.white,
@@ -136,7 +142,7 @@ class _AddFundsPageState extends State<AddFundsPage>
                           DataCapture.onScrollEnd(
                             notification,
                             'add_funds',
-                                (se) => CaptureStore().addScroll(se),
+                            (se) => CaptureStore().addScroll(se),
                           );
                         }
                         return true;
@@ -170,7 +176,8 @@ class _AddFundsPageState extends State<AddFundsPage>
                                   const SizedBox(width: 16),
                                   Expanded(
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         Text(
                                           'Fund Account',
@@ -196,7 +203,7 @@ class _AddFundsPageState extends State<AddFundsPage>
                                 ],
                               ),
                               const SizedBox(height: 36),
-      
+
                               // Account selection
                               _buildSection(
                                 title: 'Destination Account',
@@ -207,11 +214,12 @@ class _AddFundsPageState extends State<AddFundsPage>
                                     'Savings Account - ****1234',
                                     'Current Account - ****5678',
                                   ],
-                                  onChanged: (val) => setState(() => _selectedAccount = val!),
+                                  onChanged: (val) =>
+                                      setState(() => _selectedAccount = val!),
                                 ),
                               ),
                               const SizedBox(height: 32),
-      
+
                               // Quick amounts
                               _buildSection(
                                 title: 'Quick Select',
@@ -223,17 +231,26 @@ class _AddFundsPageState extends State<AddFundsPage>
                                       spacing: 12,
                                       runSpacing: 12,
                                       children: _quickAmounts.map((amt) {
-                                        final isSelected = _amountController.text == amt.toString();
+                                        final isSelected =
+                                            _amountController.text ==
+                                                amt.toString();
                                         return Material(
                                           color: Colors.transparent,
                                           child: InkWell(
                                             onTap: () {
-                                              setState(() => _amountController.text = amt.toString());
+                                              setState(() {
+                                                _amountController
+                                                  .text = amt.toString();
+                                                _isQuickAmountSelected = true ;
+                                                }
+                                              );
                                               HapticFeedback.selectionClick();
                                             },
-                                            borderRadius: BorderRadius.circular(12),
+                                            borderRadius:
+                                                BorderRadius.circular(12),
                                             child: Container(
-                                              padding: const EdgeInsets.symmetric(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
                                                 horizontal: 20,
                                                 vertical: 14,
                                               ),
@@ -247,7 +264,8 @@ class _AddFundsPageState extends State<AddFundsPage>
                                                       : Colors.grey.shade200,
                                                   width: isSelected ? 2 : 1,
                                                 ),
-                                                borderRadius: BorderRadius.circular(12),
+                                                borderRadius:
+                                                    BorderRadius.circular(12),
                                               ),
                                               child: Text(
                                                 '₹${amt.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},')}',
@@ -268,7 +286,7 @@ class _AddFundsPageState extends State<AddFundsPage>
                                 ),
                               ),
                               const SizedBox(height: 32),
-      
+
                               // Amount input
                               _buildSection(
                                 title: 'Enter Amount',
@@ -289,16 +307,22 @@ class _AddFundsPageState extends State<AddFundsPage>
                                         filled: true,
                                         fillColor: Colors.grey.shade50,
                                         border: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(12),
-                                          borderSide: BorderSide(color: Colors.grey.shade300),
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                          borderSide: BorderSide(
+                                              color: Colors.grey.shade300),
                                         ),
                                         enabledBorder: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(12),
-                                          borderSide: BorderSide(color: Colors.grey.shade300),
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                          borderSide: BorderSide(
+                                              color: Colors.grey.shade300),
                                         ),
                                         focusedBorder: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(12),
-                                          borderSide: BorderSide(color: primaryColor, width: 2),
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                          borderSide: BorderSide(
+                                              color: primaryColor, width: 2),
                                         ),
                                         prefixText: '₹ ',
                                         prefixStyle: TextStyle(
@@ -306,7 +330,8 @@ class _AddFundsPageState extends State<AddFundsPage>
                                           fontWeight: FontWeight.w600,
                                           fontSize: 18,
                                         ),
-                                        contentPadding: const EdgeInsets.symmetric(
+                                        contentPadding:
+                                            const EdgeInsets.symmetric(
                                           horizontal: 16,
                                           vertical: 20,
                                         ),
@@ -334,11 +359,12 @@ class _AddFundsPageState extends State<AddFundsPage>
                                 ),
                               ),
                               const SizedBox(height: 36),
-      
+
                               // Payment methods
                               _buildSection(
                                 title: 'Payment Method',
-                                subtitle: 'Choose your preferred payment option',
+                                subtitle:
+                                    'Choose your preferred payment option',
                                 child: Column(
                                   children: [
                                     const SizedBox(height: 16),
@@ -347,15 +373,18 @@ class _AddFundsPageState extends State<AddFundsPage>
                                       final info = entry.value;
                                       final selected = _selectedMethod == key;
                                       return Container(
-                                        margin: const EdgeInsets.only(bottom: 12),
+                                        margin:
+                                            const EdgeInsets.only(bottom: 12),
                                         child: Material(
                                           color: Colors.transparent,
                                           child: InkWell(
                                             onTap: () {
-                                              setState(() => _selectedMethod = key);
+                                              setState(
+                                                  () => _selectedMethod = key);
                                               HapticFeedback.selectionClick();
                                             },
-                                            borderRadius: BorderRadius.circular(14),
+                                            borderRadius:
+                                                BorderRadius.circular(14),
                                             child: Container(
                                               padding: const EdgeInsets.all(16),
                                               decoration: BoxDecoration(
@@ -368,63 +397,88 @@ class _AddFundsPageState extends State<AddFundsPage>
                                                       : Colors.grey.shade200,
                                                   width: selected ? 2 : 1,
                                                 ),
-                                                borderRadius: BorderRadius.circular(14),
+                                                borderRadius:
+                                                    BorderRadius.circular(14),
                                               ),
                                               child: Row(
                                                 children: [
                                                   Container(
-                                                    padding: const EdgeInsets.all(12),
+                                                    padding:
+                                                        const EdgeInsets.all(
+                                                            12),
                                                     decoration: BoxDecoration(
                                                       color: selected
                                                           ? primaryColor
-                                                          : Colors.grey.shade300,
-                                                      borderRadius: BorderRadius.circular(10),
+                                                          : Colors
+                                                              .grey.shade300,
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                              10),
                                                     ),
                                                     child: Icon(
                                                       info['icon'],
-                                                      color: selected ? Colors.white : Colors.grey.shade600,
+                                                      color: selected
+                                                          ? Colors.white
+                                                          : Colors
+                                                              .grey.shade600,
                                                       size: 24,
                                                     ),
                                                   ),
                                                   const SizedBox(width: 16),
                                                   Expanded(
                                                     child: Column(
-                                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                                      crossAxisAlignment:
+                                                          CrossAxisAlignment
+                                                              .start,
                                                       children: [
                                                         Text(
                                                           key,
                                                           style: TextStyle(
-                                                            fontWeight: FontWeight.w700,
+                                                            fontWeight:
+                                                                FontWeight.w700,
                                                             fontSize: 16,
                                                             color: selected
                                                                 ? primaryColor
-                                                                : Colors.grey.shade800,
+                                                                : Colors.grey
+                                                                    .shade800,
                                                           ),
                                                         ),
-                                                        const SizedBox(height: 4),
+                                                        const SizedBox(
+                                                            height: 4),
                                                         Text(
                                                           info['description'],
                                                           style: TextStyle(
-                                                            color: Colors.grey.shade600,
+                                                            color: Colors
+                                                                .grey.shade600,
                                                             fontSize: 14,
-                                                            fontWeight: FontWeight.w500,
+                                                            fontWeight:
+                                                                FontWeight.w500,
                                                           ),
                                                         ),
-                                                        const SizedBox(height: 6),
+                                                        const SizedBox(
+                                                            height: 6),
                                                         Row(
                                                           children: [
                                                             _buildInfoChip(
-                                                              icon: Icons.access_time_rounded,
-                                                              text: info['time'],
-                                                              selected: selected,
+                                                              icon: Icons
+                                                                  .access_time_rounded,
+                                                              text:
+                                                                  info['time'],
+                                                              selected:
+                                                                  selected,
                                                             ),
-                                                            const SizedBox(width: 8),
+                                                            const SizedBox(
+                                                                width: 8),
                                                             _buildInfoChip(
-                                                              icon: info['fee'] == 'Free'
-                                                                  ? Icons.money_off_rounded
-                                                                  : Icons.currency_rupee_rounded,
+                                                              icon: info['fee'] ==
+                                                                      'Free'
+                                                                  ? Icons
+                                                                      .money_off_rounded
+                                                                  : Icons
+                                                                      .currency_rupee_rounded,
                                                               text: info['fee'],
-                                                              selected: selected,
+                                                              selected:
+                                                                  selected,
                                                             ),
                                                           ],
                                                         ),
@@ -434,7 +488,10 @@ class _AddFundsPageState extends State<AddFundsPage>
                                                   Radio<String>(
                                                     value: key,
                                                     groupValue: _selectedMethod,
-                                                    onChanged: (val) => setState(() => _selectedMethod = val!),
+                                                    onChanged: (val) =>
+                                                        setState(() =>
+                                                            _selectedMethod =
+                                                                val!),
                                                     activeColor: primaryColor,
                                                   ),
                                                 ],
@@ -448,7 +505,7 @@ class _AddFundsPageState extends State<AddFundsPage>
                                 ),
                               ),
                               const SizedBox(height: 40),
-      
+
                               // Submit button
                               SizedBox(
                                 width: double.infinity,
@@ -457,41 +514,44 @@ class _AddFundsPageState extends State<AddFundsPage>
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: primaryColor,
                                     foregroundColor: Colors.white,
-                                    padding: const EdgeInsets.symmetric(vertical: 18),
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: 18),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(14),
                                     ),
                                     elevation: 0,
-                                    disabledBackgroundColor: Colors.grey.shade300,
+                                    disabledBackgroundColor:
+                                        Colors.grey.shade300,
                                   ),
                                   child: _isProcessing
                                       ? const SizedBox(
-                                    height: 24,
-                                    width: 24,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2.5,
-                                      color: Colors.white,
-                                    ),
-                                  )
+                                          height: 24,
+                                          width: 24,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2.5,
+                                            color: Colors.white,
+                                          ),
+                                        )
                                       : const Text(
-                                    'Process Payment',
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.w700,
-                                      letterSpacing: 0.5,
-                                    ),
-                                  ),
+                                          'Process Payment',
+                                          style: TextStyle(
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.w700,
+                                            letterSpacing: 0.5,
+                                          ),
+                                        ),
                                 ),
                               ),
                               const SizedBox(height: 24),
-      
+
                               // Security note
                               Container(
                                 padding: const EdgeInsets.all(16),
                                 decoration: BoxDecoration(
                                   color: Colors.blue.shade50,
                                   borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(color: Colors.blue.shade100),
+                                  border:
+                                      Border.all(color: Colors.blue.shade100),
                                 ),
                                 child: Row(
                                   children: [
@@ -570,9 +630,7 @@ class _AddFundsPageState extends State<AddFundsPage>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: selected
-            ? Colors.indigo.shade100
-            : Colors.grey.shade200,
+        color: selected ? Colors.indigo.shade100 : Colors.grey.shade200,
         borderRadius: BorderRadius.circular(6),
       ),
       child: Row(
@@ -581,9 +639,7 @@ class _AddFundsPageState extends State<AddFundsPage>
           Icon(
             icon,
             size: 12,
-            color: selected
-                ? Colors.indigo.shade700
-                : Colors.grey.shade600,
+            color: selected ? Colors.indigo.shade700 : Colors.grey.shade600,
           ),
           const SizedBox(width: 4),
           Text(
@@ -591,9 +647,7 @@ class _AddFundsPageState extends State<AddFundsPage>
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w600,
-              color: selected
-                  ? Colors.indigo.shade700
-                  : Colors.grey.shade600,
+              color: selected ? Colors.indigo.shade700 : Colors.grey.shade600,
             ),
           ),
         ],
@@ -627,7 +681,8 @@ class _AddFundsPageState extends State<AddFundsPage>
             borderRadius: BorderRadius.circular(12),
             borderSide: BorderSide(color: Colors.indigo.shade900, width: 2),
           ),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
         ),
         icon: Icon(
           Icons.keyboard_arrow_down_rounded,
@@ -636,12 +691,12 @@ class _AddFundsPageState extends State<AddFundsPage>
         dropdownColor: Colors.white,
         items: options
             .map((o) => DropdownMenuItem(
-          value: o,
-          child: Text(
-            o,
-            style: const TextStyle(fontWeight: FontWeight.w600),
-          ),
-        ))
+                  value: o,
+                  child: Text(
+                    o,
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                ))
             .toList(),
         onChanged: onChanged,
         style: TextStyle(
@@ -655,29 +710,84 @@ class _AddFundsPageState extends State<AddFundsPage>
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
-    setState(() => _isProcessing = true);
-    HapticFeedback.mediumImpact();
-    await Future.delayed(const Duration(seconds: 3)); // simulate API
-    setState(() => _isProcessing = false);
 
-    if (!mounted) return;
+    final amount = double.tryParse(_amountController.text) ?? 0.0;
+    final user = FirebaseAuth.instance.currentUser;
+    final username = user?.displayName ?? 'User';
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            Icon(Icons.check_circle_rounded, color: Colors.white),
-            const SizedBox(width: 12),
-            Text(
-              '₹${_amountController.text} added successfully',
-              style: const TextStyle(fontWeight: FontWeight.w600),
-            ),
-          ],
+    setState(() {
+      _isProcessing = true;
+    });
+
+    if (_isQuickAmountSelected) {
+      await Future.delayed(Duration(seconds: 1));
+
+      setState(() {
+        _isProcessing = false;
+        _isQuickAmountSelected = false; // reset flag
+      });
+
+      Navigator.of(context).push(
+        PageRouteBuilder(
+          transitionDuration: const Duration(milliseconds: 600),
+          pageBuilder: (context, animation, secondaryAnimation) => PaymentSuccessPage(
+            recipientName: username,
+            amount: amount,
+            transactionId: 'TXN123456789',
+            paymentMethod: _selectedAccount,
+          ),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            final curve = Curves.easeOutBack;
+            final curvedAnimation = CurvedAnimation(parent: animation, curve: curve);
+
+            return ScaleTransition(
+              scale: curvedAnimation,
+              child: child,
+            );
+          },
         ),
-        backgroundColor: Colors.green.shade600,
-        behavior: SnackBarBehavior.floating,
-        duration: const Duration(seconds: 3),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      );
+
+      _amountController.clear();
+      return;
+    }
+
+    final delay = Duration(milliseconds: 1000 + (1000 * (0.5 + (0.5 * (DateTime.now().millisecond % 1000) / 1000))).toInt());
+    await Future.delayed(delay);
+
+    final uuid = await DeviceIDManager.getUUID();
+    final authManager = KeypressAuthManager(userId: uuid);
+    final isAuthenticated = await authManager.sendKeyPressData(uuid: uuid, context: context);
+
+    setState(() {
+      _isProcessing = false;
+    });
+
+    if (!isAuthenticated) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Authentication failed. Payment cancelled.")),
+      );
+      return;
+    }
+
+    Navigator.of(context).push(
+      PageRouteBuilder(
+        transitionDuration: const Duration(milliseconds: 600),
+        pageBuilder: (context, animation, secondaryAnimation) => PaymentSuccessPage(
+          recipientName: username,
+          amount: amount,
+          transactionId: 'TXN123456789',
+          paymentMethod: _selectedAccount,
+        ),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          final curve = Curves.easeOutBack;
+          final curvedAnimation = CurvedAnimation(parent: animation, curve: curve);
+
+          return ScaleTransition(
+            scale: curvedAnimation,
+            child: child,
+          );
+        },
       ),
     );
 

@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tflite_flutter/tflite_flutter.dart';
 
 import '../helpers/offline_data_sender.dart';
+import '../helpers/sqflite_helper.dart';
 
 const double MAX_X = 1920.0;
 const double MAX_Y = 1080.0;
@@ -73,72 +74,42 @@ class UserEmbeddingStore {
   factory UserEmbeddingStore() => _instance;
   UserEmbeddingStore._internal();
 
-  static const String embeddingListPrefix = "embedding_list_";
+  final EmbeddingDatabase _db = EmbeddingDatabase();
 
   Future<void> appendUserEmbedding(String userId, List<double> embedding) async {
-    final prefs = await SharedPreferences.getInstance();
-    final key = "$embeddingListPrefix$userId";
-    final existing = prefs.getStringList(key) ?? [];
-
-    existing.add(jsonEncode(embedding));
-    await prefs.setStringList(key, existing);
-    print("✅ Added embedding for user $userId. Total: ${existing.length}");
+    await _db.insertEmbedding(userId, embedding);
+    print("✅ Added embedding for user $userId.");
   }
 
   Future<List<double>?> loadAverageEmbedding(String userId) async {
-    final prefs = await SharedPreferences.getInstance();
-    final key = "$embeddingListPrefix$userId";
-    final list = prefs.getStringList(key);
-    if (list == null || list.isEmpty) return null;
+    final embeddings = await _db.getUserEmbeddings(userId);
+    if (embeddings.isEmpty) return null;
 
-    final decoded = list.map((e) {
-      try {
-        return List<double>.from(jsonDecode(e));
-      } catch (err) {
-        print("❌ Failed to decode an embedding: $err");
-        return <double>[];
-      }
-    }).where((e) => e.isNotEmpty).toList();
-
-    if (decoded.isEmpty) return null;
-
-    final int dim = decoded[0].length;
+    final int dim = embeddings[0].length;
     final avg = List.filled(dim, 0.0);
-    for (final emb in decoded) {
+    for (final emb in embeddings) {
       for (int i = 0; i < dim; i++) {
         avg[i] += emb[i];
       }
     }
     for (int i = 0; i < dim; i++) {
-      avg[i] /= decoded.length;
+      avg[i] /= embeddings.length;
     }
     return avg;
   }
 
   Future<void> updateProfileWithNewEmbedding(String userId, List<double> newEmbedding) async {
-    final prefs = await SharedPreferences.getInstance();
-    final key = "$embeddingListPrefix$userId";
-    final existing = prefs.getStringList(key) ?? [];
-
-    existing.add(jsonEncode(newEmbedding));
-
-    // Keep only last 70 embeddings
-    if (existing.length > 70) {
-      existing.removeRange(0, existing.length - 70);
-    }
-
-    await prefs.setStringList(key, existing);
-    print("🔄 Updated profile for user $userId. Total embeddings: ${existing.length}");
+    await appendUserEmbedding(userId, newEmbedding);
+    await _db.deleteOldEmbeddings(userId, 70); // Keep last 70 embeddings
+    print("🔄 Updated profile for user $userId.");
   }
 
-
   Future<void> clearUserEmbeddings(String userId) async {
-    final prefs = await SharedPreferences.getInstance();
-    final key = "$embeddingListPrefix$userId";
-    await prefs.remove(key);
+    await _db.deleteEmbeddingsForUser(userId);
     print("🗑️ Cleared embeddings for user $userId");
   }
 }
+
 
 double euclideanDistance(List<double> a, List<double> b) {
   if (a.length != b.length) {
@@ -162,26 +133,6 @@ class TapAuthenticator {
     }
     print("✅ Enrollment complete for user $userId");
   }
-
-  // Future<bool> authenticateUser(String userId, List<double> tapEvent, {double threshold = 1.5}) async {
-  //   final currentEmbedding = await _modelService.runEmbedding(tapEvent);
-  //   final referenceEmbedding = await _embeddingStore.loadAverageEmbedding(userId);
-  //   if (referenceEmbedding == null) {
-  //     print("❌ No enrollment data found for user $userId — resetting enrollment.");
-  //     // Reset enrollment so system collects new embeddings
-  //     TapAuthenticationManager().resetEnrollment(userId);
-  //     return false;
-  //   }
-  //
-  //   final score = euclideanDistance(referenceEmbedding, currentEmbedding);
-  //   print("🔍 Authentication score for $userId: $score");
-  //
-  //   if(score < threshold) {
-  //     await _embeddingStore.updateProfileWithNewEmbedding(userId, currentEmbedding) ;
-  //   }
-  //
-  //   return score < threshold;
-  // }
 
   Future<double?> getAuthScore(String userId, List<double> tapEvent) async {
     final currentEmbedding = await _modelService.runEmbedding(tapEvent);
