@@ -29,6 +29,16 @@ class CaptureStore {
       }
     };
 
+  Map<String, dynamic> toKeypressJson(String uuid) => {
+    'id': uuid,
+    'events': {
+      'keypress_events': _keyEvents.map((e) => e.toMap()).toList(),
+    },
+  };
+
+  String toKeypressJsonString(String uuid) => jsonEncode(toKeypressJson(uuid));
+
+
 
   String toJsonString(String uuid) => jsonEncode(toJson(uuid));
 

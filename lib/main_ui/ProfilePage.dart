@@ -10,6 +10,7 @@ import '../helpers/data_capture.dart';
 import '../helpers/data_sender.dart';
 import '../helpers/data_store.dart';
 import '../login_screens/LoginPage.dart';
+import '../stats_screens/SensorStatsScreen.dart';
 
 class ProfileSidebar extends StatelessWidget {
   const ProfileSidebar({super.key});
@@ -130,14 +131,19 @@ class ProfileSidebar extends StatelessWidget {
 
                     _buildMenuItem(
                       icon: Icons.person_outline,
-                      title: "Account Information",
-                      onTap: () {
-                      },
+                      title: "Sensor Stats",
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => LiveStatusPage()),
+                      ),
                     ),
                     _buildMenuItem(
                       icon: Icons.settings_outlined,
-                      title: "Settings",
-                      onTap: () {},
+                      title: "Keypress Stats",
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => LiveStatusPage()),
+                      ),
                     ),
                     _buildMenuItem(
                       icon: Icons.help_outline,

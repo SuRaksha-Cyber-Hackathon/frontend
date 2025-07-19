@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -12,6 +11,7 @@ import '../controller/simple_ui_controller.dart';
 import '../helpers/data_store.dart';
 import '../main_ui/HomePage.dart';
 import '../helpers/data_capture.dart';
+import '../orchestrator/BBAOrchestrator.dart';
 import 'RegisterPage.dart';
 import 'otp_verification_page.dart';
 
@@ -19,7 +19,15 @@ class LoginPage extends StatefulWidget {
   final DateTime? lockUntil;
   final bool otpRequired;
 
-  const LoginPage({super.key, this.lockUntil, this.otpRequired = false});
+  final bool anomalyCleared;
+
+  const LoginPage({
+    super.key,
+    this.lockUntil,
+    this.otpRequired = false,
+    this.anomalyCleared = false,
+  });
+
   static const String id = '/LoginPage';
 
   @override
@@ -41,6 +49,14 @@ class _LoginPageState extends State<LoginPage> {
   void initState() {
     super.initState();
     _loadRememberedEmail();
+
+    if (widget.anomalyCleared) {
+      print("[LoginPage] Clearing capture store after anomaly recovery.");
+      CaptureStore().clear();
+      BBAOrchestrator().onLoginSuccess();
+    }
+
+    // Handle lockout UI
     if (widget.lockUntil != null) {
       _updateLockState();
       _lockTimer =
@@ -57,7 +73,6 @@ class _LoginPageState extends State<LoginPage> {
       setState(() => _rememberMe = true);
     }
   }
-
   void _updateLockState() {
     final now = DateTime.now();
     if (widget.lockUntil != null && now.isBefore(widget.lockUntil!)) {

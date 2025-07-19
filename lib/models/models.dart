@@ -121,6 +121,19 @@ class ScrollEvent {
     required this.direction,
   });
 
+  factory ScrollEvent.fromMap(Map<String, dynamic> map) {
+    return ScrollEvent(
+      startOffset: map['startOffset']?.toDouble() ?? 0.0,
+      endOffset: map['endOffset']?.toDouble() ?? 0.0,
+      distance: map['distance']?.toDouble() ?? 0.0,
+      durationMs: map['durationMs'] ?? 0,
+      timestamp: DateTime.parse(map['timestamp']),
+      contextScreen: map['contextScreen'] ?? '',
+      direction: map['direction'] ?? '',
+    );
+  }
+
+
   Map<String, dynamic> toMap() => {
     'startOffset': startOffset,
     'endOffset': endOffset,

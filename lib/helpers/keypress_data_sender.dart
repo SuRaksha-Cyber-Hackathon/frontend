@@ -1,23 +1,21 @@
 import 'dart:async';
-
 import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/material.dart';
 
+import '../dio_controller/DioController.dart';
 import '../orchestrator/BBAOrchestrator.dart';
+import '../stats_collectors/keypress_collector.dart';
 import 'data_store.dart';
 
 class KeypressAuthManager {
-  static const String serverUrl = "https://6qp6wdgn-8000.inc1.devtunnels.ms";
   static const int requiredEnrollments = 10;
   static const int _maxRetries = 1;
 
   final String userId;
-  final Dio _dio = Dio();
+  final Dio _dio = DioController().modelServer;
 
-  // 1) Cache SharedPreferences instance once:
-  static final Future<SharedPreferences> _prefsFuture =
-  SharedPreferences.getInstance();
+  static final Future<SharedPreferences> _prefsFuture = SharedPreferences.getInstance();
 
   KeypressAuthManager({required this.userId});
 
@@ -38,36 +36,33 @@ class KeypressAuthManager {
     print("Reset keypress prefs for user: $userId");
 
     try {
-      await _dio.post("$serverUrl/reset/$userId");
+      await _dio.post("/reset/$userId");
       print("Reset server enrollment for user: $userId");
     } catch (e) {
       print("Failed to reset server enrollment: $e");
     }
   }
 
-  /// Sends keypress data, auto‑enrolling vs verifying, and prevents infinite retry.
   Future<bool> sendKeyPressData({
     required String uuid,
     required BuildContext context,
     int retryCount = 0,
   }) async {
-    final Stopwatch stopwatch = Stopwatch()..start(); // 🕒 Start measuring
+    final Stopwatch stopwatch = Stopwatch()..start();
 
     try {
       final store = CaptureStore();
-      final data = store.toJson(uuid);
+      final data = store.toKeypressJson(uuid);
       final prefs = await _prefsFuture;
       final initialEnrolled = await _isEnrolled();
 
       final endpoint = initialEnrolled ? "/verify/$userId" : "/enroll/$userId";
-      final fullUrl = "$serverUrl$endpoint";
 
-      // Log attempt with retry count
       print("➡️ Sending keypress data to $endpoint (Retry #$retryCount)");
 
       final response = await _dio
           .post(
-        fullUrl,
+        endpoint,
         data: data,
         options: Options(
           headers: {'Content-Type': 'application/json'},
@@ -92,10 +87,9 @@ class KeypressAuthManager {
         final errStatus = detail['status'] as String? ?? 'error';
         final errMsg = detail['message'] as String? ?? 'Unknown error';
 
-        // Retry on known errors
         if ((errStatus == 'user_not_found' || errStatus == 'enrollment_incomplete') &&
             retryCount < _maxRetries) {
-          final delay = Duration(milliseconds: 500 * (1 << retryCount)); // 500ms, 1000ms, etc
+          final delay = Duration(milliseconds: 500 * (1 << retryCount));
           await Future.delayed(delay);
           return await sendKeyPressData(
             uuid: uuid,
@@ -130,6 +124,14 @@ class KeypressAuthManager {
               ? "[KEYPRESS] Enrollment complete! Ready for verification."
               : "[KEYPRESS] Enrolled sample $serverCount/$requiredEnrollments";
 
+          LiveKeypressNotifier().update(
+            userId: userId,
+            enrollmentCount: serverCount,
+            requiredEnrollments: requiredEnrollments,
+            isEnrolled: enrolledNow,
+            lastMessage: msg,
+          );
+
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(msg),
@@ -141,7 +143,7 @@ class KeypressAuthManager {
           final similarity = (resp['average_similarity'] as num?)?.toDouble() ?? 0.0;
           final verified = resp['verified'] as bool? ?? false;
 
-          BBAOrchestrator().updateKeypressResult(similarity); // 🔁 Update orchestration
+          BBAOrchestrator().updateKeypressResult(similarity);
 
           if (verified) {
             store.clearKeyPressEvents();
@@ -150,6 +152,13 @@ class KeypressAuthManager {
           final msg = verified
               ? "[KEYPRESS] Verified! Similarity: ${similarity.toStringAsFixed(3)}"
               : "[KEYPRESS] ❌ Verification failed. Similarity: ${similarity.toStringAsFixed(3)}";
+
+          LiveKeypressNotifier().update(
+            userId: userId,
+            lastSimilarity: similarity,
+            lastVerified: verified,
+            lastMessage: msg,
+          );
 
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -161,7 +170,6 @@ class KeypressAuthManager {
         }
       }
 
-      // Fallback
       final detailMsg = resp['message'] as String? ?? 'Unexpected response';
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(detailMsg), backgroundColor: Colors.red),
@@ -175,7 +183,7 @@ class KeypressAuthManager {
       );
 
       if (retryCount < _maxRetries) {
-        await Future.delayed(Duration(milliseconds: 500 * (1 << retryCount))); // Backoff
+        await Future.delayed(Duration(milliseconds: 500 * (1 << retryCount)));
         return await sendKeyPressData(
           uuid: uuid,
           context: context,
@@ -203,7 +211,7 @@ class KeypressAuthManager {
       print("⚠️ DioException: $errorMessage");
 
       if (retryCount < _maxRetries) {
-        await Future.delayed(Duration(milliseconds: 500 * (1 << retryCount))); // Backoff
+        await Future.delayed(Duration(milliseconds: 500 * (1 << retryCount)));
         return await sendKeyPressData(
           uuid: uuid,
           context: context,
@@ -230,8 +238,6 @@ class KeypressAuthManager {
       print("📊 Total request time: ${stopwatch.elapsedMilliseconds} ms");
     }
   }
-
-
 
   Future<Map<String, dynamic>> getEnrollmentStatus() async {
     final enrolled = await _isEnrolled();
