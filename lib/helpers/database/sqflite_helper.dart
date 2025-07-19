@@ -43,10 +43,6 @@ class EmbeddingDatabase {
     final db = await database;
     final now = DateTime.now().millisecondsSinceEpoch;
 
-    // Store embedding as JSON string
-    final embeddingJson = embedding.toString(); // We'll fix format below
-
-    // Better to store as JSON string for readability
     final embeddingJsonString = jsonEncode(embedding);
 
     return await db.insert(
@@ -91,7 +87,6 @@ class EmbeddingDatabase {
 
   Future<int> deleteOldEmbeddings(String userId, int keepLastN) async {
     final db = await database;
-    // Get count of embeddings
     final countResult = Sqflite.firstIntValue(await db.rawQuery(
         'SELECT COUNT(*) FROM user_embeddings WHERE user_id = ?', [userId]));
 
@@ -101,7 +96,6 @@ class EmbeddingDatabase {
 
     final toDelete = countResult - keepLastN;
 
-    // Delete oldest embeddings (order by created_at ascending)
     return await db.rawDelete('''
       DELETE FROM user_embeddings 
       WHERE id IN (

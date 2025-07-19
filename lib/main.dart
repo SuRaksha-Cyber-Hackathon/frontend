@@ -7,10 +7,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'controller/simple_ui_controller.dart';
 import 'device_id/DeviceIDManager.dart';
 import 'firebase_options.dart';
-import 'helpers/offline_data_sender.dart';
+import 'helpers/data_transmitters/offline_data_sender.dart';
 import 'login_screens/RegisterPage.dart';
 import 'main_ui/HomePage.dart';
-import 'helpers/data_sender.dart';
+import 'helpers/data_transmitters/sensor_data_sender.dart';
 import 'models/SiameseModel.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();

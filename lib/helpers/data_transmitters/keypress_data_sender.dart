@@ -3,10 +3,10 @@ import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/material.dart';
 
-import '../dio_controller/DioController.dart';
-import '../orchestrator/BBAOrchestrator.dart';
-import '../stats_collectors/keypress_collector.dart';
-import 'data_store.dart';
+import '../../dio_controller/DioController.dart';
+import '../../orchestrator/BBAOrchestrator.dart';
+import '../../stats_collectors/keypress_collector.dart';
+import '../data_store.dart';
 
 class KeypressAuthManager {
   static const int requiredEnrollments = 10;
@@ -58,7 +58,7 @@ class KeypressAuthManager {
 
       final endpoint = initialEnrolled ? "/verify/$userId" : "/enroll/$userId";
 
-      print("➡️ Sending keypress data to $endpoint (Retry #$retryCount)");
+      print("[KEYPRESS] Sending keypress data to $endpoint (Retry #$retryCount)");
 
       final response = await _dio
           .post(
@@ -75,7 +75,7 @@ class KeypressAuthManager {
         onTimeout: () => throw TimeoutException("Keypress request timed out"),
       );
 
-      print("✅ Response received in ${stopwatch.elapsedMilliseconds} ms");
+      print("[KEYPRESS] Response received in ${stopwatch.elapsedMilliseconds} ms");
 
       if (response.statusCode != 200) {
         final Map<String, dynamic> payload = response.data is Map
@@ -151,7 +151,7 @@ class KeypressAuthManager {
 
           final msg = verified
               ? "[KEYPRESS] Verified! Similarity: ${similarity.toStringAsFixed(3)}"
-              : "[KEYPRESS] ❌ Verification failed. Similarity: ${similarity.toStringAsFixed(3)}";
+              : "[KEYPRESS] Verification failed. Similarity: ${similarity.toStringAsFixed(3)}";
 
           LiveKeypressNotifier().update(
             userId: userId,

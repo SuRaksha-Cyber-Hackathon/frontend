@@ -5,9 +5,8 @@ import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../controller/simple_ui_controller.dart';
 import '../helpers/data_capture.dart';
-import '../helpers/data_sender.dart';
+import '../helpers/data_transmitters/sensor_data_sender.dart';
 import '../helpers/data_store.dart';
 import '../login_screens/LoginPage.dart';
 import '../stats_screens/SensorStatsScreen.dart';

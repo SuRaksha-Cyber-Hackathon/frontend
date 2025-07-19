@@ -3,8 +3,8 @@ import 'dart:math';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tflite_flutter/tflite_flutter.dart';
 
-import '../helpers/offline_data_sender.dart';
-import '../helpers/sqflite_helper.dart';
+import '../helpers/data_transmitters/offline_data_sender.dart';
+import '../helpers/database/sqflite_helper.dart';
 
 const double MAX_X = 1920.0;
 const double MAX_Y = 1080.0;
@@ -53,7 +53,7 @@ class SiameseModelService {
     _interpreter = await Interpreter.fromAsset("assets/siamese_model_new.tflite");
     _inputShape = _interpreter.getInputTensor(0).shape;
     _outputShape = _interpreter.getOutputTensor(0).shape;
-    print("✅ Siamese model loaded with input shape $_inputShape and output shape $_outputShape.");
+    print("Siamese model loaded with input shape $_inputShape and output shape $_outputShape.");
   }
 
   Future<List<double>> runEmbedding(List<double> input) async {
@@ -78,7 +78,7 @@ class UserEmbeddingStore {
 
   Future<void> appendUserEmbedding(String userId, List<double> embedding) async {
     await _db.insertEmbedding(userId, embedding);
-    print("✅ Added embedding for user $userId.");
+    print("Added embedding for user $userId.");
   }
 
   Future<List<double>?> loadAverageEmbedding(String userId) async {
@@ -101,12 +101,12 @@ class UserEmbeddingStore {
   Future<void> updateProfileWithNewEmbedding(String userId, List<double> newEmbedding) async {
     await appendUserEmbedding(userId, newEmbedding);
     await _db.deleteOldEmbeddings(userId, 70); // Keep last 70 embeddings
-    print("🔄 Updated profile for user $userId.");
+    print("Updated profile for user $userId.");
   }
 
   Future<void> clearUserEmbeddings(String userId) async {
     await _db.deleteEmbeddingsForUser(userId);
-    print("🗑️ Cleared embeddings for user $userId");
+    print("Cleared embeddings for user $userId");
   }
 }
 
@@ -131,22 +131,22 @@ class TapAuthenticator {
       final embedding = await _modelService.runEmbedding(tap);
       await _embeddingStore.appendUserEmbedding(userId, embedding);
     }
-    print("✅ Enrollment complete for user $userId");
+    print("Enrollment complete for user $userId");
   }
 
   Future<double?> getAuthScore(String userId, List<double> tapEvent) async {
     final currentEmbedding = await _modelService.runEmbedding(tapEvent);
     final referenceEmbedding = await _embeddingStore.loadAverageEmbedding(userId);
     if (referenceEmbedding == null) {
-      print("❌ No enrollment data found for user $userId — resetting enrollment.");
+      print("No enrollment data found for user $userId — resetting enrollment.");
       TapAuthenticationManager().resetEnrollment(userId);
       return null;
     }
 
     final score = euclideanDistance(referenceEmbedding, currentEmbedding);
-    print("🔍 Authentication score for $userId: $score");
+    print("Authentication score for $userId: $score");
 
-    if(score < 1.5) { // You can make threshold configurable here or pass as arg
+    if(score < 1.5) {
       await _embeddingStore.updateProfileWithNewEmbedding(userId, currentEmbedding) ;
     }
     return score;

@@ -1,4 +1,4 @@
-import '../models/models.dart';
+import '../../models/models.dart';
 
 List<List<double>> extractSensorFeatureWindows({
   required List<SensorEvent> sensorEvents,
@@ -8,11 +8,9 @@ List<List<double>> extractSensorFeatureWindows({
   int winSize = 10,
   int stepSize = 5,
 }) {
-  // 1. Split sensorEvents into acc & gyro
   final acc = sensorEvents.where((e) => e.type == 'accelerometer').toList();
   final gyro = sensorEvents.where((e) => e.type == 'gyroscope').toList();
 
-  // 2. Pair them by nearest timestamp within ±0.5s
   final paired = <MapEntry<DateTime, List<double>>>[];
   int j = 0;
   for (final a in acc) {
@@ -37,12 +35,10 @@ List<List<double>> extractSensorFeatureWindows({
 
   if (paired.length < winSize) return [];
 
-  // 3. Sort by time
   paired.sort((u, v) => u.key.compareTo(v.key));
   final times = paired.map((e) => e.key).toList();
   final feats = paired.map((e) => e.value).toList();
 
-  // 4. Pre‑extract event timestamps for fast counting
   final tapTs = tapEvents.map((e) => e.timestamp).toList();
   final swipeTs = swipeEvents.map((e) => e.timestamp).toList();
   // Only count "keydown" events as an actual key press
@@ -51,7 +47,6 @@ List<List<double>> extractSensorFeatureWindows({
       .map((e) => e.timestamp)
       .toList();
 
-  // 5. Slide window
   final windows = <List<double>>[];
   for (int i = 0; i + winSize <= feats.length; i += stepSize) {
     final sliceFeats = feats.sublist(i, i + winSize);
@@ -59,7 +54,6 @@ List<List<double>> extractSensorFeatureWindows({
     final start = windowTimes.first;
     final end = windowTimes.last;
 
-    // 6. Count events in [start, end]
     final tapCount =
         tapTs.where((t) => !t.isBefore(start) && !t.isAfter(end)).length;
     final swipeCount =
@@ -67,7 +61,6 @@ List<List<double>> extractSensorFeatureWindows({
     final keyCount =
         keyTs.where((t) => !t.isBefore(start) && !t.isAfter(end)).length;
 
-    // 7. Flatten sensor features + counts
     final flat = <double>[];
     for (final feat in sliceFeats) {
       flat.addAll(feat);

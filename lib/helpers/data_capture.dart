@@ -9,7 +9,7 @@ import '../main.dart';
 import '../models/SiameseModel.dart';
 import '../models/models.dart';
 import 'data_store.dart';
-import 'offline_data_sender.dart';
+import 'data_transmitters/offline_data_sender.dart';
 
 /// Manages key press, swipe, and tap event capture.
 class DataCapture {

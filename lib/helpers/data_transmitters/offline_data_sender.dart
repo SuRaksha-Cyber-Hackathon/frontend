@@ -3,8 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../models/SiameseModel.dart';
-import '../orchestrator/BBAOrchestrator.dart';
+import '../../models/SiameseModel.dart';
+import '../../orchestrator/BBAOrchestrator.dart';
 
 class TapAuthenticationManager {
   static final GlobalKey<ScaffoldMessengerState> messengerKey =
@@ -152,8 +152,8 @@ class TapAuthenticationManager {
             "Verification #$_verifyCount → median score: ${medianScore.toStringAsFixed(3)}, threshold: $threshold");
 
         final msg = anomaly
-            ? "[TAP SCORE] Median : ${medianScore.toStringAsFixed(3)} > $threshold"
-            : "[TAP SCORE] Median : ${medianScore.toStringAsFixed(3)} ≤ $threshold";
+            ? "[TAP SCORE] Median : ${medianScore.toStringAsFixed(3)}"
+            : "[TAP SCORE] Median : ${medianScore.toStringAsFixed(3)}";
 
         TapAuthenticationManager.messengerKey.currentState?.showSnackBar(
           SnackBar(
@@ -174,7 +174,7 @@ class TapAuthenticationManager {
 
   Future<void> _completeEnrollment(String userId) async {
     if (_isEnrolled) {
-      debugPrint("✅ [TAP] Enrollment already completed — skipping _completeEnrollment");
+      debugPrint("[TAP] Enrollment already completed — skipping _completeEnrollment");
       return;
     }
 
@@ -191,7 +191,7 @@ class TapAuthenticationManager {
             backgroundColor: Colors.green),
       );
 
-      debugPrint("🎉 [TAP] Enrollment completed and persisted for $userId");
+      debugPrint("[TAP] Enrollment completed and persisted for $userId");
     }
   }
 

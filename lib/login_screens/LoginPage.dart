@@ -56,7 +56,6 @@ class _LoginPageState extends State<LoginPage> {
       BBAOrchestrator().onLoginSuccess();
     }
 
-    // Handle lockout UI
     if (widget.lockUntil != null) {
       _updateLockState();
       _lockTimer =
@@ -85,7 +84,6 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-  // Enhanced lockout dialog with better UI
   Future<void> _showLockoutDialog() async {
     if (!mounted) return;
     await Future.delayed(Duration(milliseconds: 100));
@@ -216,10 +214,11 @@ class _LoginPageState extends State<LoginPage> {
       return true;
     } on FirebaseAuthException catch (e) {
       String msg = 'Login failed';
-      if (e.code == 'user-not-found')
+      if (e.code == 'user-not-found') {
         msg = 'User not found';
-      else if (e.code == 'wrong-password')
+      } else if (e.code == 'wrong-password') {
         msg = 'Wrong password';
+        }
       else if (e.code == 'invalid-email') msg = 'Invalid email';
       _showSnackBar(msg, Colors.red);
       return false;

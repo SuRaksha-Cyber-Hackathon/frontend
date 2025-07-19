@@ -4,7 +4,7 @@ import 'package:flutter/services.dart';
 import '../device_id/DeviceIDManager.dart';
 import '../helpers/data_capture.dart';
 import '../helpers/data_store.dart';
-import '../helpers/keypress_data_sender.dart';
+import '../helpers/data_transmitters/keypress_data_sender.dart';
 
 class TransferPage extends StatefulWidget {
   @override

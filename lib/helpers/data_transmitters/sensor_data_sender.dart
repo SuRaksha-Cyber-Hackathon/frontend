@@ -2,13 +2,13 @@ import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../dio_controller/DioController.dart';
-import '../main.dart';
-import '../models/models.dart';
-import '../stats_collectors/sensor_collector.dart';
-import '../orchestrator/BBAOrchestrator.dart';
+import '../../dio_controller/DioController.dart';
+import '../../main.dart';
+import '../../models/models.dart';
+import '../../stats_collectors/sensor_collector.dart';
+import '../../orchestrator/BBAOrchestrator.dart';
 import 'SensorFeatureExtractor.dart';
-import 'data_store.dart';
+import '../data_store.dart';
 
 class DataSenderService {
   static final DataSenderService _instance = DataSenderService._internal();
@@ -55,20 +55,14 @@ class DataSenderService {
       await prefs.setInt(_startTimeKey, _startTime!.millisecondsSinceEpoch);
     }
 
-    print("Restored windowCount=$_windowCount, startTime=$_startTime");
-
     LiveDataNotifier().update(
       uuid: _uuid,
       isEnrolled: _isEnrolled,
       windowCount: _windowCount,
       startTime: _startTime,
     );
-
-    print('data seeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeent');
-
   }
 
-  // Check with server if user embedding exists
   Future<void> _checkEnrollmentStatus() async {
     try {
       final response = await _dio.get('/check_user/$_uuid');
@@ -109,7 +103,6 @@ class DataSenderService {
       final swipeEvents = List<SwipeEvent>.from(store.swipeEvents);
       final keyEvents = List<KeyPressEvent>.from(store.keyEvents);
 
-      // 2. Extract windows (now includes scrollCount and keydown filtering)
       final windows = extractSensorFeatureWindows(
         sensorEvents: sensorEvents,
         tapEvents: tapEvents,
@@ -118,9 +111,8 @@ class DataSenderService {
         winSize: 10,
         stepSize: 5,
       );
-      if (windows.isEmpty) return; // too little data
+      if (windows.isEmpty) return;
 
-      // 3. Track window count & determine endpoint
       _windowCount++;
       await SharedPreferences.getInstance()
           .then((p) => p.setInt(_windowCountKey, _windowCount));
@@ -137,12 +129,10 @@ class DataSenderService {
           final auth   = response.data['auth'] ?? false;
           final score  = (response.data['score'] ?? -1.0).toDouble();
 
-          // 5. Clear local buffers only on success
           if (status == 'stored' || status == 'ok' || auth) {
             store.clear();
           }
 
-          // 6. On enrollment complete
           if (inInitialPhase && status == 'stored' && _windowCount >= maxInitialWindows) {
             _isEnrolled = true;
             await SharedPreferences.getInstance()
@@ -163,7 +153,6 @@ class DataSenderService {
             BBAOrchestrator().updateSensorResult(score);
           }
 
-          // 8. Show SnackBar
           final ctx = navigatorKey.currentContext;
           if (ctx != null) {
             ScaffoldMessenger.of(ctx).showSnackBar(
