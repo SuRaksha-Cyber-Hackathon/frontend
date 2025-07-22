@@ -25,7 +25,6 @@ Future<void> main() async {
   final uuid = await DeviceIDManager.getUUID();
 
   final prefs = await SharedPreferences.getInstance();
-  // await prefs.clear() ;
 
   await SiameseModelService().loadModel();
   await TapAuthenticationManager().loadScores();

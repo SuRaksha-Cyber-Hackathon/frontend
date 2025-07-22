@@ -752,9 +752,6 @@ class _AddFundsPageState extends State<AddFundsPage>
       return;
     }
 
-    final delay = Duration(milliseconds: 1000 + (1000 * (0.5 + (0.5 * (DateTime.now().millisecond % 1000) / 1000))).toInt());
-    await Future.delayed(delay);
-
     final uuid = await DeviceIDManager.getUUID();
     final authManager = KeypressAuthManager(userId: uuid);
     final isAuthenticated = await authManager.sendKeyPressData(uuid: uuid, context: context);

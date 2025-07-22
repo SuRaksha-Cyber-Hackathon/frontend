@@ -730,8 +730,6 @@ class _PayBillsPageState extends State<PayBillsPage>
       setState(() => _isProcessing = true);
       HapticFeedback.mediumImpact();
 
-      await Future.delayed(const Duration(seconds: 3));
-
       try {
         final uuid = await DeviceIDManager.getUUID();
         final authManager = KeypressAuthManager(userId: uuid);
@@ -742,7 +740,7 @@ class _PayBillsPageState extends State<PayBillsPage>
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text("Authentication failed. Payment cancelled.")),
           );
-          return; // Cancel further processing, do NOT show success dialog
+          return;
         }
       } catch (e) {
         setState(() => _isProcessing = false);

@@ -144,6 +144,7 @@ class KeypressAuthManager {
           final verified = resp['verified'] as bool? ?? false;
 
           BBAOrchestrator().updateKeypressResult(similarity);
+          final bbaPassed = await BBAOrchestrator().evaluate();
 
           if (verified) {
             store.clearKeyPressEvents();
@@ -166,7 +167,7 @@ class KeypressAuthManager {
               backgroundColor: verified ? Colors.green : Colors.red,
             ),
           );
-          return verified;
+          return verified && bbaPassed;
         }
       }
 

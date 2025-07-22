@@ -491,8 +491,6 @@ class _TransferPageState extends State<TransferPage> with TickerProviderStateMix
       setState(() => _isProcessing = true);
       HapticFeedback.mediumImpact();
 
-      await Future.delayed(const Duration(seconds: 2));
-
       final amount = _amountController.text;
       final account = _accountController.text;
 

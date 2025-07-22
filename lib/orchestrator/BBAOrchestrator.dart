@@ -21,8 +21,8 @@ class StreamStats {
 
   StreamStats({
     this.alpha = 0.05,
-    this.maxWindowSize = 30,  // Slightly larger window
-    this.minWindowSize = 5    // Minimum samples needed
+    this.maxWindowSize = 30,
+    this.minWindowSize = 5
   });
 
   void update(double d) {
@@ -31,16 +31,14 @@ class StreamStats {
       _window.removeAt(0);
     }
 
-    // Use window-based stats when we have enough data
     if (_window.length >= minWindowSize) {
       mu = _window.reduce((a, b) => a + b) / _window.length;
       final varianceSum = _window.map((x) => pow(x - mu, 2)).reduce((a, b) => a + b);
-      variance = max(varianceSum / _window.length, 0.01); // Prevent division by zero
+      variance = max(varianceSum / _window.length, 0.01);
     } else {
-      // Fallback to exponential moving average
       mu = alpha * d + (1 - alpha) * mu;
       variance = alpha * pow(d - mu, 2) + (1 - alpha) * variance;
-      variance = max(variance, 0.01); // Prevent division by zero
+      variance = max(variance, 0.01);
     }
   }
 
@@ -52,15 +50,11 @@ class StreamStats {
 }
 
 class BBAOrchestrator {
-  // --- SINGLETON PATTERN SETUP ---
-  // This ensures only one instance of the orchestrator ever exists.
   static final BBAOrchestrator _instance = BBAOrchestrator._internal();
   factory BBAOrchestrator() {
     return _instance;
   }
 
-  // --- PRIVATE CONSTRUCTOR & DEBOUNCE TIMER ---
-  // This constructor is called only once when the singleton instance is created.
   BBAOrchestrator._internal() {
     print('[BBAOrchestrator] Singleton instance created with a ${_evaluationDebounceDuration.inMilliseconds}ms debounce window.');
   }
@@ -76,45 +70,47 @@ class BBAOrchestrator {
     return DateTime.now().difference(_lastLoginTime!) < Duration(seconds: 30);
   }
 
-  // --- INSTANCE VARIABLES ---
+  Completer<bool>? _evalCompleter;
+
+  /// Public: schedule evaluation and return a Future
+  Future<bool> evaluate() {
+    if (_evalCompleter != null && !_evalCompleter!.isCompleted) {
+      return _evalCompleter!.future;
+    }
+    _evalCompleter = Completer<bool>();
+    scheduleEvaluation();
+    return _evalCompleter!.future;
+  }
+
   BBAResult? _sensorResult;
   BBAResult? _keypressResult;
   BBAResult? _tapResult;
 
-  // Models for tracking statistics over time
-  final double zThresh = 2.0;  // Z-score threshold (was 1.0)
-  final double rawThresh = 1.5; // Raw score threshold (was 0.8)
+  final double zThresh = 2.0;
+  final double rawThresh = 1.5;
   final double rawThreshTap = 2.0 ;
-  final double wS = 0.4, wK = 0.3, wT = 0.3; // Keep your weights
+  final double wS = 0.25, wK = 0.5, wT = 0.25;
 
-  // Replace your StreamStats with ImprovedStreamStats
   final StreamStats _sensorStats = StreamStats(alpha: 0.05);
   final StreamStats _keypressStats = StreamStats(alpha: 0.05);
   final StreamStats _tapStats = StreamStats(alpha: 0.05);
 
-  // State variables
   final Duration maxDataAge = const Duration(minutes: 3);
   ThreatLevel _currentThreat = ThreatLevel.none;
   DateTime? _lockoutUntil;
 
-  DateTime? _lastWarningTime;       // when the first warning was shown
-  bool _warningShown = false;       // ensures banner is shown only once
+  DateTime? _lastWarningTime;
+  bool _warningShown = false;
   static const Duration warningGrace = Duration(seconds: 30);
 
-  // Debounce timer to group events
   Timer? _evaluationTimer;
   final Duration _evaluationDebounceDuration = const Duration(milliseconds: 1000);
 
-  // --- PUBLIC METHODS ---
-
-  /// Schedules a consolidated evaluation to run after a short delay.
-  /// Resets the delay if new data arrives.
-  void _scheduleEvaluation() {
+  void scheduleEvaluation() {
     _evaluationTimer?.cancel();
     _evaluationTimer = Timer(_evaluationDebounceDuration, _evaluateAndAct);
   }
 
-  /// Called by an event source (e.g., sensor) to provide a new score.
   void updateSensorResult(double score) {
     if (_inCooldownPeriod()) {
       print("[BBA] Skipping sensor check due to cooldown.");
@@ -122,10 +118,9 @@ class BBAOrchestrator {
     }
     _sensorResult = BBAResult(score);
     print('[BBA] Updated sensor result: $score. Scheduling evaluation.');
-    _scheduleEvaluation();
+    scheduleEvaluation();
   }
 
-  /// Called by an event source (e.g., keypress) to provide a new score.
   void updateKeypressResult(double rawSimilarity) {
     if (_inCooldownPeriod()) {
       print("[BBA] Skipping keypress check due to cooldown.");
@@ -133,10 +128,9 @@ class BBAOrchestrator {
     }
     _keypressResult = BBAResult(rawSimilarity);
     print('[BBA] Updated keypress result: $rawSimilarity. Scheduling evaluation.');
-    _scheduleEvaluation();
+    scheduleEvaluation();
   }
 
-  /// Called by an event source (e.g., tap) to provide a new score.
   void updateTapResult(double rawScore) {
     if (_inCooldownPeriod()) {
       print("[BBA] Skipping tap check due to cooldown.");
@@ -144,7 +138,7 @@ class BBAOrchestrator {
     }
     _tapResult = BBAResult(rawScore);
     print('[BBA] Updated tap result: $rawScore. Scheduling evaluation.');
-    _scheduleEvaluation();
+    scheduleEvaluation();
   }
 
   void reset() {
@@ -154,18 +148,12 @@ class BBAOrchestrator {
     _currentThreat = ThreatLevel.none;
     _lockoutUntil = null;
     _evaluationTimer?.cancel();
-    print('[BBA] Orchestrator reset');
   }
 
   void dispose() {
     _evaluationTimer?.cancel();
   }
 
-
-  // --- INTERNAL LOGIC ---
-
-  /// This is the core logic that runs after the debounce timer finishes.
-  /// It evaluates all recent data together.
   void _evaluateAndAct() {
     print('[BBA] Debounce timer fired. Evaluating collected data...');
     final now = DateTime.now();
@@ -177,7 +165,6 @@ class BBAOrchestrator {
       return;
     }
 
-    // Check data validity (same as before)
     final validSensor = _sensorResult != null && now.difference(_sensorResult!.timestamp) < maxDataAge;
     final validKeypress = _keypressResult != null && now.difference(_keypressResult!.timestamp) < maxDataAge;
     final validTap = _tapResult != null && now.difference(_tapResult!.timestamp) < maxDataAge;
@@ -187,17 +174,14 @@ class BBAOrchestrator {
       return;
     }
 
-    // Update statistics (same as before)
     if (validSensor) _sensorStats.update(_sensorResult!.score);
     if (validKeypress) _keypressStats.update(_keypressResult!.score);
     if (validTap) _tapStats.update(_tapResult!.score);
 
-    // NEW: Calculate normalized scores for each modality
     double sensorScore = _calculateNormalizedScore(validSensor, _sensorResult, _sensorStats);
     double keypressScore = _calculateNormalizedScore(validKeypress, _keypressResult, _keypressStats);
     double tapScore = _calculateNormalizedScore(validTap, _tapResult, _tapStats);
 
-    // NEW: Calculate weighted average
     double totalWeight = 0.0;
     double weightedSum = 0.0;
 
@@ -226,7 +210,23 @@ class BBAOrchestrator {
     double combinedScore = weightedScore
         + (anyHigh ? agreementBonus : 0.0);
 
+    String res = '[BBA] Final combinedScore: ${combinedScore.toStringAsFixed(3)}' ;
+
+    final context = navigatorKey.currentContext ;
+
     print('[BBA] Final combinedScore: ${combinedScore.toStringAsFixed(3)}');
+    ScaffoldMessenger.of(context!).showSnackBar(
+      SnackBar(
+        content: Text(res),
+        backgroundColor: Colors.black,
+      ),
+    );
+
+    final passed = combinedScore < 0.5;
+
+    if (_evalCompleter != null && !_evalCompleter!.isCompleted) {
+      _evalCompleter!.complete(passed);
+    }
 
     bool sensorAnom  = (_sensorResult?.score ?? 0.0) >= rawThresh;
     bool keypressAnom = (_keypressResult?.score ?? 0.0) >= rawThresh;
@@ -247,7 +247,7 @@ class BBAOrchestrator {
           showWarningBanner(ctx, which);
         }
         print('[BBA] First single‑modality warning shown for $which.');
-        return;                       // do not escalate yet
+        return;
       }
 
       final inGrace =
@@ -282,7 +282,7 @@ class BBAOrchestrator {
 
     double zNormalized = 0.0;
     if (stats.hasEnoughData) {
-      double zScore = stats.z(rawScore).abs(); // Take absolute value
+      double zScore = stats.z(rawScore).abs();
       zNormalized = min(zScore / zThresh, 1.0);
     }
 
@@ -456,7 +456,7 @@ class BBAOrchestrator {
   Future<void> _handleSevereAnomaly(BuildContext context) async {
     await _showLoadingDialog(context);
     final otpSent = await _sendOtpToEmail();
-    Navigator.of(context, rootNavigator: true).pop(); // Close loading dialog
+    Navigator.of(context, rootNavigator: true).pop();
 
     if (otpSent) {
       await _navigateToLoginPage(context, lockUntil: _lockoutUntil, otpRequired: true);
@@ -466,7 +466,7 @@ class BBAOrchestrator {
   Future<void> _handleModerateAnomaly(BuildContext context) async {
     await _showLoadingDialog(context);
     final otpSent = await _sendOtpToEmail();
-    Navigator.of(context, rootNavigator: true).pop(); // Close loading dialog
+    Navigator.of(context, rootNavigator: true).pop();
 
     if (otpSent) {
       await _navigateToLoginPage(context, otpRequired: true);
